@@ -14,7 +14,7 @@
 class Window {
 
     GLFWwindow *window;
-    Object root;
+    Object object_root, gui_root;
     std::map<unsigned, std::tuple<std::function<bool()>, double, double>> timeouts;
     unsigned tick_counter = 0;
 
@@ -39,8 +39,8 @@ public:
         double now = glfwGetTime();
         auto timeout = this->timeouts.begin();
 
-        this->root.detectCollisions();
-        this->root.update(now, this->tick_counter);
+        this->object_root.update(now, this->tick_counter, true);
+        this->gui_root.update(now, this->tick_counter, false);
 
         while (timeout != this->timeouts.end()) {
 
@@ -57,7 +57,11 @@ public:
     }
 
     inline void addObject (Object *obj) {
-        this->root.addChild(obj);
+        this->object_root.addChild(obj);
+    }
+
+    inline void addGUI (Object *gui) {
+        this->gui_root.addChild(gui);
     }
 
     inline unsigned sync (unsigned fps = 60) {
@@ -131,15 +135,15 @@ public:
     }
 
     inline void setShader (const Shader::Program *shader) {
-        this->root.setShader(shader);
+        this->object_root.setShader(shader);
     }
 
     inline void draw () const {
-        const Shader::Program *shader = this->root.getShader();
-        if (shader != nullptr) {
-            this->root.getShader()->use();
-        }
-        this->root.draw();
+        Shader::Program::useShader(this->object_root.getShader());
+        this->object_root.draw();
+
+        Shader::Program::useShader(this->gui_root.getShader());
+        this->gui_root.draw();
     }
 
     inline void makeCurrentContext () const {
