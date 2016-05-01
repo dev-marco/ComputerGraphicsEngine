@@ -106,6 +106,11 @@ public:
         Event::Event<EventType>::add(this->window, func, id);
     }
 
+    template <typename EventType>
+    inline void eraseEvent (const std::string &id = "") {
+        Event::Event<EventType>::erase(this->window, id);
+    }
+
 };
 
 #endif
