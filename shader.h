@@ -73,6 +73,14 @@ namespace Shader {
 
     public:
 
+        static inline void useShader (const Program *shader) {
+            if (shader) {
+                shader->use();
+            } else {
+                glUseProgram(0);
+            }
+        }
+
         inline Program (bool _multiple = false) : prog(glCreateProgram()), multiple(_multiple) {}
 
         inline ~Program (void) { glDeleteProgram(this->prog); }
