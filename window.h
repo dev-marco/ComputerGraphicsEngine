@@ -16,83 +16,50 @@ class Window {
     GLFWwindow *window;
     Object object_root, gui_root;
     std::map<unsigned, std::tuple<std::function<bool()>, double, double>> timeouts;
-    unsigned tick_counter = 0;
+    unsigned tick_counter = 0, timeout_counter = 0;
+    double start_time = 0;
 
-    inline bool executeTimeout (std::map<unsigned, std::tuple<std::function<bool()>, double, double>>::iterator timeout) {
-        if (std::get<0>(timeout->second)()) {
-            std::get<1>(timeout->second) += std::get<2>(timeout->second);
-            return true;
-        }
-        this->timeouts.erase(timeout);
-        return false;
-    }
+    bool executeTimeout(std::map<unsigned, std::tuple<std::function<bool()>, double, double>>::iterator timeout);
 
 public:
 
-    inline Window (int width, int height, const char *title, GLFWmonitor *monitor, GLFWwindow *share) :
-        window(glfwCreateWindow(width, height, title, monitor, share)) {
+    inline Window (
+        int width,
+        int height,
+        const char *title,
+        GLFWmonitor *monitor,
+        GLFWwindow *share
+    ) : window(glfwCreateWindow(width, height, title, monitor, share)) {
         glfwSetCursorPosCallback(this->window, Event::Event<Event::MouseMove>::trigger);
     };
 
-    void update () {
+    void update(void);
 
-        double now = glfwGetTime();
-        auto timeout = this->timeouts.begin();
-
-        this->object_root.update(now, this->tick_counter, true);
-        this->gui_root.update(now, this->tick_counter, false);
-
-        while (timeout != this->timeouts.end()) {
-
-            auto next = std::next(timeout, 1);
-
-            if (std::get<1>(timeout->second) <= now) {
-                this->executeTimeout(timeout);
-            }
-
-            timeout = next;
-        }
-
-        this->tick_counter++;
-    }
-
-    inline void addObject (Object *obj) {
-        this->object_root.addChild(obj);
-    }
-
-    inline void addGUI (Object *gui) {
-        this->gui_root.addChild(gui);
-    }
+    inline void addObject (Object *obj) { this->object_root.addChild(obj); }
+    inline void addGUI (Object *gui) { this->gui_root.addChild(gui); }
 
     inline unsigned sync (unsigned fps = 60) {
-        static double start_time = 0;
         double frame_time = 1.0 / static_cast<double>(fps), now = glfwGetTime();
-        if ((start_time + frame_time) > now) {
-            usleep((start_time + frame_time - now) * 1000000.0);
+        if ((this->start_time + frame_time) > now) {
+            usleep((this->start_time + frame_time - now) * 1000000.0);
         } else {
-            fps = static_cast<unsigned>(round(1.0 / (now - start_time)));
+            fps = static_cast<unsigned>(round(1.0 / (now - this->start_time)));
         }
-        start_time = glfwGetTime();
+        this->start_time = glfwGetTime();
         return fps;
     }
 
-    inline unsigned setTimeout (const std::function<bool()> &func, double interval) {
-
-        static unsigned timeout_counter = 0;
-
-        double now = glfwGetTime();
-
-        unsigned id = timeout_counter;
-        timeout_counter++;
-
-        this->timeouts[id] = std::forward_as_tuple(func, now + interval, interval);
-
+    inline unsigned setTimeout (
+        const std::function<bool()> &func,
+        double interval
+    ) {
+        unsigned id = this->timeout_counter;
+        this->timeout_counter++;
+        this->timeouts[id] = std::forward_as_tuple(func, glfwGetTime() + interval, interval);
         return id;
     }
 
-    inline void clearTimeout (unsigned id) {
-        this->timeouts.erase(id);
-    }
+    inline void clearTimeout (unsigned id) { this->timeouts.erase(id); }
 
     inline bool executeTimeout (unsigned id) {
         auto timeout = this->timeouts.find(id);
@@ -102,77 +69,37 @@ public:
         return false;
     }
 
-    inline unsigned animate (
+    unsigned animate (
         const std::function<bool(double)> &func,
         double total_time,
         unsigned total_steps = 0,
         std::function<double(double, double, double, double)> easing = Easing::Linear
-    ) {
-
-        double delta, start_time = glfwGetTime();
-
-        if (total_steps == 0) {
-            total_steps = ceil(total_time / 0.01);
-        }
-
-        delta = 1.0 / static_cast<double>(total_steps);
-
-        return this->setTimeout ([ delta, func, easing, start_time, total_time ] () -> bool {
-            double now = glfwGetTime();
-            if (now < (total_time + start_time)) {
-                return func(easing(now - start_time, 0.0, 1.0, total_time));
-            }
-            func(1.0);
-            return false;
-        }, total_time * delta);
-    }
+    );
 
     inline void completeAnimation (unsigned id) {
         auto timeout = this->timeouts.find(id);
         if (timeout != this->timeouts.end()) {
-            while(this->executeTimeout(timeout));
+            while (this->executeTimeout(timeout));
         }
     }
 
-    inline void setShader (const Shader::Program *shader) {
-        this->object_root.setShader(shader);
-    }
+    inline void setShader (const Shader::Program *shader) { this->object_root.setShader(shader); }
 
     inline void draw () const {
-        Shader::Program::useShader(this->object_root.getShader());
-        this->object_root.draw();
-
-        Shader::Program::useShader(this->gui_root.getShader());
-        this->gui_root.draw();
+        Shader::Program::useShader(this->object_root.getShader()), this->object_root.draw();
+        Shader::Program::useShader(this->gui_root.getShader()), this->gui_root.draw();
     }
 
-    inline void makeCurrentContext () const {
-        glfwMakeContextCurrent(this->window);
-    }
+    inline void makeCurrentContext () const { glfwMakeContextCurrent(this->window); }
+    inline bool shouldClose () const { return glfwWindowShouldClose(this->window); }
+    inline void swapBuffers () const { glfwSwapBuffers(this->window); }
+    inline void getFramebufferSize (int &width, int &height) const { glfwGetFramebufferSize(this->window, &width, &height); }
 
-    inline bool shouldClose () const {
-        return glfwWindowShouldClose(this->window);
-    }
+    inline GLFWwindow *get () const { return this->window; }
 
-    inline void swapBuffers () const {
-        glfwSwapBuffers(this->window);
-    }
+    inline operator bool () const { return this->window; }
 
-    inline void getFramebufferSize (int &width, int &height) const {
-        glfwGetFramebufferSize(this->window, &width, &height);
-    }
-
-    inline GLFWwindow *get () const {
-        return this->window;
-    }
-
-    inline operator bool () const {
-        return this->window;
-    }
-
-    inline unsigned getTick () const {
-        return this->tick_counter;
-    }
+    inline unsigned getTick () const { return this->tick_counter; }
 
     template <typename EventType>
     inline void event (typename EventType::FunctionType func, const std::string &id = "") {

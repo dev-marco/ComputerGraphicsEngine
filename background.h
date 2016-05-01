@@ -19,15 +19,11 @@ class BackgroundColor : virtual public Background {
     Color color;
 
 public:
-    BackgroundColor (const Color &_color) : color(_color) {};
+    inline BackgroundColor (const Color &_color) : color(_color) {};
 
-    void setColor (const Color &_color) {
-        this->color = _color;
-    }
+    inline void setColor (const Color &_color) { this->color = _color; }
 
-    void apply () const {
-        this->color.apply();
-    }
+    inline void apply (void) const { this->color.apply(); }
 };
 
 #endif

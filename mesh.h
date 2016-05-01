@@ -40,6 +40,7 @@ public:
         const std::valarray<double> &ray_start,
         const std::valarray<double> &ray_end,
         const std::valarray<double> &point,
+        std::valarray<double> &near_point,
         bool infinite = false
     ) {
         std::valarray<double> delta_ray = ray_end - ray_start;
@@ -60,41 +61,36 @@ public:
             }
         }
 
-        std::valarray<double> near_point = ray_start + param * delta_ray;
+        near_point = ray_start + param * delta_ray;
 
         return distance2D(point, near_point);
     }
 
-    static bool collisionCircles2D (
+    inline static bool collisionCircles2D (
         std::valarray<double> position_1,
         double radius_1,
         std::valarray<double> position_2,
         double radius_2
-    ) {
-        return Mesh::distance2D(position_1, position_2) <= (radius_1 + radius_2);
-    }
+    ) { return Mesh::distance2D(position_1, position_2) <= (radius_1 + radius_2); }
 
-    static bool collisionRectangles2D (
+    inline static bool collisionRectangles2D (
         std::valarray<double> position_1,
         double width_1,
         double height_1,
         std::valarray<double> position_2,
         double width_2,
         double height_2
-    ) {
-        return position_1[0] < (position_2[0] + width_2 ) && (position_1[0] + width_1 ) > position_2[0] &&
-               position_1[1] < (position_2[1] + height_2) && (position_1[1] + height_1) > position_2[1];
-    }
+    ) { return position_1[0] < (position_2[0] + width_2 ) && (position_1[0] + width_1 ) > position_2[0] &&
+               position_1[1] < (position_2[1] + height_2) && (position_1[1] + height_1) > position_2[1]; }
 
-    static bool collisionRayCircle2D (
+    inline static bool collisionRayCircle2D (
         std::valarray<double> ray_start,
         std::valarray<double> ray_end,
         std::valarray<double> circle_center,
         double circle_radius,
+        std::valarray<double> &near_point,
         bool infinite = false
-    ) {
-        return Mesh::distanceRayToPoint2D(ray_start, ray_end, circle_center, infinite) <= circle_radius;
-    }
+    ) { return Mesh::distanceRayToPoint2D(ray_start, ray_end, circle_center, near_point, infinite) <= circle_radius; }
 
     static bool collisionRectangleCircle2D (
         std::valarray<double> rect_top_left,
@@ -107,14 +103,24 @@ public:
                               rect_bottom_right = { rect_top_left[0] + rect_width, rect_top_left[1] + rect_height },
                               rect_bottom_left = { rect_top_left[0], rect_top_left[1] + rect_height };
 
-        return (
+        std::valarray<double> near_point;
+
+        if (Mesh::collisionRayCircle2D(rect_top_left, rect_top_right, circle_center, circle_radius, near_point) ||
+            Mesh::collisionRayCircle2D(rect_top_right, rect_bottom_right, circle_center, circle_radius, near_point) ||
+            Mesh::collisionRayCircle2D(rect_bottom_left, rect_bottom_right, circle_center, circle_radius, near_point) ||
+            Mesh::collisionRayCircle2D(rect_top_left, rect_bottom_left, circle_center, circle_radius, near_point)) {
+            return true;
+        }
+
+        if (
             rect_top_left[0] <= circle_center[0] && circle_center[0] <= rect_bottom_right[0] &&
             rect_top_left[1] <= circle_center[1] && circle_center[1] <= rect_bottom_right[1]
-        ) ||
-        Mesh::collisionRayCircle2D(rect_top_left, rect_top_right, circle_center, circle_radius) ||
-        Mesh::collisionRayCircle2D(rect_top_right, rect_bottom_right, circle_center, circle_radius) ||
-        Mesh::collisionRayCircle2D(rect_bottom_right, rect_bottom_left, circle_center, circle_radius) ||
-        Mesh::collisionRayCircle2D(rect_bottom_left, rect_top_left, circle_center, circle_radius);
+        ) {
+            near_point = circle_center;
+            return true;
+        }
+
+        return false;
     }
 
     Mesh (const std::array<double, 3> &_position = { 0.0, 0.0, 0.0 }) :

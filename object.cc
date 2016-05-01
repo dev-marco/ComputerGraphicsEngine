@@ -13,8 +13,6 @@ void Object::delayedDestroy (void ) {
 
         if (Object::isValid(obj)) {
 
-            std::cout << "destroying " << obj << std::endl;
-
             obj->beforeDestroy();
 
             obj->removeParent();
