@@ -109,8 +109,24 @@ namespace Event {
             Event<EventType>::add(window, func, "", limit);
         }
 
-        static void erase(GLFWwindow *window, const FunctionType &func);
-        static void erase(GLFWwindow *window, const std::string &id);
+        static void erase(GLFWwindow *window, const FunctionType &func) {
+            for (const auto &ev : EventType::trigger_list[window]) {
+                if (std::get<0>(ev) == func) {
+                    std::get<3>(ev) = true;
+                }
+            }
+        }
+
+        static void erase(GLFWwindow *window, const std::string &id) {
+            if (id != "") {
+                for (auto &ev : EventType::trigger_list[window]) {
+                    if (std::get<1>(ev) == id) {
+                        std::get<3>(ev) = true;
+                    }
+                }
+            }
+        }
+
 
     };
 };
