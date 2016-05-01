@@ -44,27 +44,26 @@ void Object::move (bool collision_detect) {
         if (parent && this->collides()) {
 
             const unsigned collision_samples = 8;
-            std::valarray<double> delta_speed = this->getSpeed() / static_cast<double>(collision_samples);
-            bool collided = false;
+            std::valarray<double> start_speed = this->getSpeed(), delta_speed = start_speed / static_cast<double>(collision_samples);
 
-            for (unsigned i = 0; i < collision_samples && !collided; i++) {
+            for (unsigned i = 0; i < collision_samples && (this->getSpeed() == start_speed).min(); i++) {
 
                 double multiplier = static_cast<double>(i) / static_cast<double>(collision_samples);
                 this->position += delta_speed;
 
                 for (const auto &other : parent->getChildren()) {
 
-                    if (this != other && other->collides() && !other->hasTestedCollision(this)) {
+                    if (this != other && other->collides() && !this->hasTestedCollision(other)) {
 
                         std::valarray<double> other_position = other->getPosition() + other->getSpeed() * multiplier;
 
-                        this->tested_collisions.insert(other);
+                        other->tested_collisions.insert(this);
 
                         if (this->detectCollision(other, this->position, other_position)) {
                             this->onCollision(other);
                             other->onCollision(this);
-
-                            collided = true;
+                            this->tested_collisions.insert(other);
+                            std::cout << this->getType() << " " << other->getType() << std::endl;
                         }
                     }
                 }

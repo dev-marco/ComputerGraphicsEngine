@@ -32,13 +32,13 @@ public:
     inline static bool isValid (const Object *obj) { return Object::invalid.find(obj) == Object::invalid.end(); }
 
     inline Object (
-        const std::array<double, 3> &_position = {0.0, 0.0, 0.0},
+        const std::array<double, 3> &_position = { 0.0, 0.0, 0.0 },
         bool _display = true,
         Mesh *_mesh = new Mesh(),
         Mesh *_collider = nullptr,
         Background *_background = new Background(),
-        const std::array<double, 3> &_speed = {0.0, 0.0, 0.0},
-        const std::array<double, 3> &_acceleration = {0.0, 0.0, 0.0}
+        const std::array<double, 3> &_speed = { 0.0, 0.0, 0.0 },
+        const std::array<double, 3> &_acceleration = { 0.0, 0.0, 0.0 }
     ) : display(_display), mesh(_mesh), collider(_collider), background(_background), position(_position.data(), 3), speed(_speed.data(), 3), acceleration(_acceleration.data(), 3) {
         Object::invalid.erase(this);
     };
