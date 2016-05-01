@@ -231,9 +231,9 @@ public:
         // }
 
         glVertex3d(position[0], position[1], position[2]);
-        for (double i = position[0]; i < position[0] + width; i += 0.001) {
-            glVertex3d(i, position[1], position[2]);
-        }
+        // for (double i = position[0]; i < position[0] + width; i += 0.001) {
+        //     glVertex3d(i, position[1], position[2]);
+        // }
 
         glVertex3d(position[0] + width, position[1], position[2]);
         // for (double i = position[1]; i < position[1] + height; i += 0.001) {
@@ -241,9 +241,9 @@ public:
         // }
 
         glVertex3d(position[0] + width, position[1] + height * ratio, position[2]);
-        for (double i = position[0] + width; i > position[0]; i -= 0.001) {
-            glVertex3d(i, position[1] + height, position[2]);
-        }
+        // for (double i = position[0] + width; i > position[0]; i -= 0.001) {
+        //     glVertex3d(i, position[1] + height, position[2]);
+        // }
 
         glEnd();
     }
