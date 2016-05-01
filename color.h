@@ -1,5 +1,5 @@
-#ifndef SRC_COLOR_H_
-#define SRC_COLOR_H_
+#ifndef SRC_ENGINE_COLOR_H_
+#define SRC_ENGINE_COLOR_H_
 
 #include <GLFW/glfw3.h>
 

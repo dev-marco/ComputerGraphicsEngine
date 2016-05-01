@@ -1,5 +1,5 @@
-#ifndef SRC_EVENT_H_
-#define SRC_EVENT_H_
+#ifndef SRC_ENGINE_EVENT_H_
+#define SRC_ENGINE_EVENT_H_
 
 #include <unordered_map>
 #include <string>

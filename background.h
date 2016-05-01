@@ -1,5 +1,5 @@
-#ifndef SRC_BACKGROUND_H_
-#define SRC_BACKGROUND_H_
+#ifndef SRC_ENGINE_BACKGROUND_H_
+#define SRC_ENGINE_BACKGROUND_H_
 
 #include <memory>
 #include <iostream>

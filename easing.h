@@ -1,5 +1,5 @@
-#ifndef SRC_EASING_H_
-#define SRC_EASING_H_
+#ifndef SRC_ENGINE_EASING_H_
+#define SRC_ENGINE_EASING_H_
 
 #include <cmath>
 

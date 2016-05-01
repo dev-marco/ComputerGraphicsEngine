@@ -1,5 +1,5 @@
-#ifndef SRC_OBJECT_H_
-#define SRC_OBJECT_H_
+#ifndef SRC_ENGINE_OBJECT_H_
+#define SRC_ENGINE_OBJECT_H_
 
 #include <memory>
 #include <array>

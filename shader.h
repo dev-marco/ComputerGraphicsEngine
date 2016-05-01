@@ -1,5 +1,5 @@
-#ifndef SRC_SHADER_H_
-#define SRC_SHADER_H_
+#ifndef SRC_ENGINE_SHADER_H_
+#define SRC_ENGINE_SHADER_H_
 
 #include <string>
 #include <vector>

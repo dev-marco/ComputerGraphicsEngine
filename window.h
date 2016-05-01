@@ -1,5 +1,5 @@
-#ifndef SRC_WINDOW_H_
-#define SRC_WINDOW_H_
+#ifndef SRC_ENGINE_WINDOW_H_
+#define SRC_ENGINE_WINDOW_H_
 
 #include <functional>
 #include <map>

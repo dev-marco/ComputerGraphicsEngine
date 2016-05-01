@@ -1,16 +1,19 @@
+#ifndef SRC_ENGINE_SHADERS_WAVESHADER_H_
+#define SRC_ENGINE_SHADERS_WAVESHADER_H_
+
 #include <string>
 
 namespace Shader {
 
-	const std::string cgwg_CRT_fragment = R"_cgwg_CRT_frag(
+	const std::string wave_fragment = R"_wave_frag(
 		#version 120
 
 		void main (void) {
 			gl_FragColor = gl_Color;
 		}
-	)_cgwg_CRT_frag";
+	)_wave_frag";
 
-	const std::string cgwg_CRT_vertex = R"_cgwg_CRT_vert(
+	const std::string wave_vertex = R"_wave_vert(
 		#version 120
 
 		uniform float time;
@@ -23,6 +26,8 @@ namespace Shader {
 
 			gl_Position = gl_ModelViewProjectionMatrix * v;
 		}
-	)_cgwg_CRT_vert";
+	)_wave_vert";
 
 }
+
+#endif

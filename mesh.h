@@ -1,5 +1,5 @@
-#ifndef SRC_MESH_H_
-#define SRC_MESH_H_
+#ifndef SRC_ENGINE_MESH_H_
+#define SRC_ENGINE_MESH_H_
 
 #include <valarray>
 #include <vector>
