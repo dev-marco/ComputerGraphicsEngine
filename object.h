@@ -29,6 +29,18 @@ class Object {
 
 public:
 
+    inline static double vectorSize (const std::valarray<double> &vector) {
+        return std::sqrt((vector * vector).sum());
+    }
+
+    inline static std::valarray<double> resizeVector (const std::valarray<double> &vector, double vector_size, double new_size) {
+        return vector * (new_size / vector_size);
+    }
+
+    inline static std::valarray<double> resizeVector (const std::valarray<double> &vector, double new_size) {
+        return Object::resizeVector(vector, Object::vectorSize(vector), new_size);
+    }
+
     inline static bool isValid (const Object *obj) { return Object::invalid.find(obj) == Object::invalid.end(); }
 
     inline Object (
@@ -64,8 +76,8 @@ public:
 
     inline bool hasTestedCollision (Object *other) const { return this->tested_collisions.find(other) != this->tested_collisions.end(); }
 
-    void move(bool collision_detect);
-    void update(double now, unsigned tick, bool collision_detect);
+    void move(bool collision_detect, double delta_time);
+    void update(double now, double delta_time, unsigned tick, bool collision_detect);
     void draw(double ratio = 1.0) const;
 
     inline const Shader::Program *getShader (void) const { return this->shader; }
@@ -90,8 +102,8 @@ public:
     virtual inline void onCollision (const Object *other) {}
     virtual inline void beforeDestroy () {}
     virtual inline void afterDestroy () {}
-    virtual inline void beforeUpdate (double now, unsigned tick) {}
-    virtual inline void afterUpdate (double now, unsigned tick) {}
+    virtual inline void beforeUpdate (double now, double delta_time, unsigned tick) {}
+    virtual inline void afterUpdate (double now, double delta_time, unsigned tick) {}
     virtual inline void beforeDraw () const {}
     virtual inline void afterDraw () const {}
 

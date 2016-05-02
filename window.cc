@@ -11,11 +11,14 @@ bool Window::executeTimeout (std::map<unsigned, std::tuple<std::function<bool()>
 
 void Window::update (void) {
 
-    double now = glfwGetTime();
+    static double first_time = 0;
+    double now = glfwGetTime(), delta_time = now - first_time;
     auto timeout = this->timeouts.begin();
 
-    this->object_root.update(now, this->tick_counter, true);
-    this->gui_root.update(now, this->tick_counter, false);
+    this->object_root.update(now, delta_time, this->tick_counter, true);
+    this->gui_root.update(now, delta_time, this->tick_counter, false);
+
+    first_time = now;
 
     while (timeout != this->timeouts.end()) {
 

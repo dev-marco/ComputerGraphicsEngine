@@ -35,7 +35,7 @@ void Object::delayedDestroy (void ) {
     }
 }
 
-void Object::move (bool collision_detect) {
+void Object::move (bool collision_detect, double delta_time) {
 
     if (collision_detect && this->isMoving()) {
 
@@ -44,7 +44,7 @@ void Object::move (bool collision_detect) {
         if (parent && this->collides()) {
 
             const unsigned collision_samples = 8;
-            std::valarray<double> start_speed = this->getSpeed(), delta_speed = start_speed / static_cast<double>(collision_samples);
+            std::valarray<double> start_speed = this->getSpeed(), delta_speed = start_speed * (delta_time / static_cast<double>(collision_samples));
 
             for (unsigned i = 0; i < collision_samples && (this->getSpeed() == start_speed).min(); i++) {
 
@@ -72,12 +72,12 @@ void Object::move (bool collision_detect) {
             this->tested_collisions.clear();
 
         } else {
-            this->position += this->speed;
+            this->position += this->speed * delta_time;
         }
     }
 }
 
-void Object::update (double now, unsigned tick, bool collision_detect) {
+void Object::update (double now, double delta_time, unsigned tick, bool collision_detect) {
 
     static bool destroy_shared = true;
     bool destroy_local = destroy_shared;
@@ -86,16 +86,16 @@ void Object::update (double now, unsigned tick, bool collision_detect) {
 
     if (Object::isValid(this)) {
 
-        this->beforeUpdate(now, tick);
+        this->beforeUpdate(now, delta_time, tick);
 
-        this->move(collision_detect);
-        this->speed += this->acceleration;
+        this->move(collision_detect, delta_time);
+        this->speed += this->acceleration * delta_time;
 
         for (const auto &child : this->children) {
-            child->update(now, tick, collision_detect);
+            child->update(now, delta_time, tick, collision_detect);
         }
 
-        this->afterUpdate(now, tick);
+        this->afterUpdate(now, delta_time, tick);
     }
 
     if (destroy_local) {
