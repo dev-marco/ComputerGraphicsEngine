@@ -44,14 +44,13 @@ public:
         bool infinite = false
     ) {
         std::valarray<double> delta_ray = ray_end - ray_start;
-        double length_pow = std::pow(ray_start - ray_end, 2).sum();
+        double param, length_pow = std::pow(ray_start - ray_end, 2).sum();
 
         if (length_pow == 0.0) {
             return distance2D(point, ray_start);
         }
 
-        std::valarray<double> point_to_start = point - ray_start;
-        double param = std::inner_product(begin(point_to_start), end(point_to_start), begin(std::valarray<double>(ray_end - ray_start)), 0.0) / length_pow;
+        param = ((point - ray_start) * (ray_end - ray_start)).sum() / length_pow;
 
         if (!infinite) {
             if (param < 0.0) {
