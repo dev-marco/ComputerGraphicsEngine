@@ -73,11 +73,39 @@ namespace Shader {
 
     public:
 
-        static inline void useShader (const Program *shader) {
-            if (shader) {
-                shader->use();
+        static std::stack<const Program *> programs;
+
+        static inline void pushShader (const Program *shader) {
+            if (shader && shader != current_shader) {
+                current_shader = shader;
+                current_shader->use();
+            }
+            programs.push(shader);
+        }
+
+        static inline void popShader (void) {
+            programs.pop();
+            if (!programs.empty()) {
+                const Program *shader = programs.top();
+                if (shader && shader != current_shader) {
+                    current_shader = shader;
+                    current_shader->use();
+                }
             } else {
+                current_shader = nullptr;
                 glUseProgram(0);
+            }
+        }
+
+        static inline void useShader (const Program *shader, bool clear = true) {
+            if (shader) {
+                current_shader = shader;
+                shader->use();
+                std::stack<const Program *>().swap(programs);
+            } else if (clear) {
+                current_shader = nullptr;
+                glUseProgram(0);
+                std::stack<const Program *>().swap(programs);
             }
         }
 
