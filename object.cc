@@ -35,44 +35,54 @@ void Object::delayedDestroy (void ) {
     }
 }
 
-void Object::move (bool collision_detect, double delta_time) {
+void Object::move (double delta_time, bool collision_detect) {
 
-    if (collision_detect && this->isMoving()) {
+    if (collision_detect) {
 
-        Object *parent = this->getParent();
+        static std::unordered_set<Object *> moving;
 
-        if (parent && this->collides()) {
+        for (auto &child : this->children) {
+            if (child->isMoving()) {
+                if (child->collides()) {
+                    moving.insert(child);
+                } else {
+                    child->setPosition(child->getSpeed() * delta_time);
+                }
+            }
+        }
 
-            const unsigned collision_samples = 8;
-            std::valarray<double> start_speed = this->getSpeed(), delta_speed = start_speed * (delta_time / static_cast<double>(collision_samples));
+        if (!moving.empty()) {
 
-            for (unsigned i = 0; i < collision_samples && (this->getSpeed() == start_speed).min(); i++) {
+            constexpr unsigned collision_samples = 4;
+            const double multiplier = delta_time / static_cast<double>(collision_samples);
+            std::valarray<double> point;
 
-                double multiplier = static_cast<double>(i) / static_cast<double>(collision_samples);
-                this->position += delta_speed;
+            for (unsigned i = 0; i < collision_samples; ++i) {
 
-                for (const auto &other : parent->getChildren()) {
+                static std::unordered_map<Object *, std::unordered_set<Object *>> collided;
 
-                    if (this != other && other->collides() && !this->hasTestedCollision(other)) {
+                for (auto &child : moving) {
+                    child->setPosition(child->getPosition() + child->getSpeed() * multiplier);
+                }
 
-                        std::valarray<double> other_position = other->getPosition() + other->getSpeed() * multiplier;
-
-                        other->tested_collisions.insert(this);
-
-                        if (this->detectCollision(other, this->position, other_position)) {
-                            this->onCollision(other);
-                            other->onCollision(this);
-                            this->tested_collisions.insert(other);
-                            std::cout << this->getType() << " " << other->getType() << std::endl;
+                for (auto &child : std::unordered_set<Object *>(moving)) {
+                    for (auto &other : this->children) {
+                        if (child != other && !collided[child].count(other) && child->detectCollision(other, point)) {
+                            child->onCollision(other, point);
+                            other->onCollision(child, point);
+                            collided[other].insert(child);
                         }
                     }
                 }
+
+                collided.clear();
             }
+        }
 
-            this->tested_collisions.clear();
-
-        } else {
-            this->position += this->speed * delta_time;
+        moving.clear();
+    } else {
+        for (auto &child : this->children) {
+            child->setPosition(child->getSpeed() * delta_time);
         }
     }
 }
@@ -88,7 +98,7 @@ void Object::update (double now, double delta_time, unsigned tick, bool collisio
 
         this->beforeUpdate(now, delta_time, tick);
 
-        this->move(collision_detect, delta_time);
+        this->move(delta_time, collision_detect);
         this->speed += this->acceleration * delta_time;
 
         for (const auto &child : this->children) {
