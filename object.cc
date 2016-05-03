@@ -53,7 +53,7 @@ void Object::move (double delta_time, bool collision_detect) {
 
         if (!moving.empty()) {
 
-            constexpr unsigned collision_samples = 8;
+            constexpr unsigned collision_samples = 16;
             const double multiplier = delta_time / static_cast<double>(collision_samples);
             std::valarray<double> point;
 
