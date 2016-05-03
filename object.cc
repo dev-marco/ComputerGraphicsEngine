@@ -53,7 +53,7 @@ void Object::move (double delta_time, bool collision_detect) {
 
         if (!moving.empty()) {
 
-            constexpr unsigned collision_samples = 4;
+            constexpr unsigned collision_samples = 8;
             const double multiplier = delta_time / static_cast<double>(collision_samples);
             std::valarray<double> point;
 
@@ -114,24 +114,24 @@ void Object::update (double now, double delta_time, unsigned tick, bool collisio
     }
 }
 
-void Object::draw (double ratio) const {
+void Object::draw (double ratio, bool only_border) const {
 
     if (Object::isValid(this)) {
         if (this->display) {
 
-            this->beforeDraw();
+            this->beforeDraw(ratio, only_border);
 
             // Shader::push(this->shader);
 
-            this->mesh->draw(this->position, this->background, ratio);
+            this->mesh->draw(this->position, this->background, only_border, ratio);
 
             for (const auto &child : this->children) {
-                child->draw(ratio);
+                child->draw(ratio, only_border);
             }
 
             // Shader::pop();
 
-            this->afterDraw();
+            this->afterDraw(ratio, only_border);
         }
     } else {
         std::cout << "drawing error" << std::endl;

@@ -130,14 +130,14 @@ public:
 
     virtual ~Mesh () {}
 
-    void draw (const std::valarray<double> &position, const Background *background, double ratio = 1.0) const {
+    void draw (const std::valarray<double> &position, const Background *background, bool only_border = false, double ratio = 1.0) const {
 
         std::valarray<double> offset = position + this->position;
 
-        this->_draw(offset, background, ratio);
+        this->_draw(offset, background, only_border, ratio);
 
         for (const auto &mesh : this->children) {
-            mesh->draw(offset, background, ratio);
+            mesh->draw(offset, background, only_border, ratio);
         }
     }
 
@@ -147,7 +147,7 @@ public:
 
     inline void setPosition (const std::array<double, 3> _position) { this->position = std::valarray<double>(_position.data(), 3); }
 
-    inline virtual void _draw (const std::valarray<double> &position, const Background *background, double ratio) const {}
+    inline virtual void _draw (const std::valarray<double> &position, const Background *background, bool only_border, double ratio) const {}
 
     virtual bool detectCollision (
         const Mesh *other,
@@ -171,10 +171,14 @@ public:
     inline Polygon2D (const std::array<double, 3> &_position, double _radius, int _sides, double _angle = 0.0) :
         Mesh(_position), radius(_radius), angle(_angle), sides(_sides) {};
 
-    void _draw (const std::valarray<double> &position, const Background *background, double ratio) const {
+    void _draw (const std::valarray<double> &position, const Background *background, bool only_border, double ratio) const {
 
         double step = (Polygon2D::PI * 2.0) / static_cast<double>(this->sides);
-        glBegin(GL_TRIANGLE_FAN);
+        if (only_border) {
+            glBegin(GL_LINE_LOOP);
+        } else {
+            glBegin(GL_TRIANGLE_FAN);
+        }
 
         background->apply();
 
@@ -234,9 +238,13 @@ public:
     Rectangle2D (const std::array<double, 3> &_position, double _width, double _height) :
         Mesh(_position), width(_width), height(_height) {};
 
-    inline void _draw (const std::valarray<double> &position, const Background *background, double ratio) const {
+    inline void _draw (const std::valarray<double> &position, const Background *background, bool only_border, double ratio) const {
 
-        glBegin(GL_TRIANGLE_FAN);
+        if (only_border) {
+            glBegin(GL_LINE_LOOP);
+        } else {
+            glBegin(GL_TRIANGLE_FAN);
+        }
 
         background->apply();
 

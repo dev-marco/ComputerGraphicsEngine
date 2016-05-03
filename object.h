@@ -4,6 +4,7 @@
 #include <memory>
 #include <array>
 #include <stack>
+#include <list>
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
@@ -20,7 +21,7 @@ class Object {
     bool display;
     Mesh *mesh, *collider = nullptr;
     Background *background;
-    std::unordered_set<Object *> children, tested_collisions;
+    std::list<Object *> children;
     Object *parent = nullptr;
     std::valarray<double> position, speed, acceleration;
     Shader::Program *shader = nullptr;
@@ -65,20 +66,18 @@ public:
 
     inline bool isMoving (void) const { for (double s : this->speed) { if (s != 0) { return true; } } return false; }
 
-    inline void addChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = this, this->children.insert(obj); } }
-    inline void removeChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = nullptr, this->children.erase(obj); } }
+    inline void addChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = this, this->children.push_back(obj); } }
+    inline void removeChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = nullptr, this->children.remove(obj); } }
 
     inline void setParent (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { this->parent->addChild(obj); } }
     inline void removeParent (void) { if (Object::isValid(this) && Object::isValid(this->parent)) { this->parent->removeChild(this); } }
     inline Object *getParent (void) const { return this->parent; }
 
-    inline const std::unordered_set<Object *> &getChildren (void) const { return this->children; }
-
-    inline bool hasTestedCollision (Object *other) const { return this->tested_collisions.find(other) != this->tested_collisions.end(); }
+    inline const std::list<Object *> &getChildren (void) const { return this->children; }
 
     void move(double delta_time, bool collision_detect);
     void update(double now, double delta_time, unsigned tick, bool collision_detect);
-    void draw(double ratio = 1.0) const;
+    void draw(double ratio = 1.0, bool only_border = false) const;
 
     inline Shader::Program *getShader (void) const { return this->shader; }
 
@@ -104,8 +103,8 @@ public:
     virtual inline void afterDestroy () {}
     virtual inline void beforeUpdate (double now, double delta_time, unsigned tick) {}
     virtual inline void afterUpdate (double now, double delta_time, unsigned tick) {}
-    virtual inline void beforeDraw () const {}
-    virtual inline void afterDraw () const {}
+    virtual inline void beforeDraw (double ratio, bool only_border) const {}
+    virtual inline void afterDraw (double ratio, bool only_border) const {}
 
     virtual inline std::string getType () const { return "object"; }
 
