@@ -57,13 +57,13 @@ public:
 
     inline virtual ~Object () { Object::invalid.insert(this); }
 
-    inline bool detectCollision (const Object *other, const std::valarray<double> &my_position, const std::valarray<double> &other_position) const {
-        return this->getCollider()->detectCollision(other->getCollider(), my_position, other_position);
+    inline bool detectCollision (const Object *other, std::valarray<double> &point) const {
+        return this->getCollider()->detectCollision(other->getCollider(), this->getPosition(), other->getPosition(), point);
     }
 
     inline bool collides () const { return this->collider != nullptr; }
 
-    inline bool isMoving (void) const { return (this->speed != 0.0).max(); }
+    inline bool isMoving (void) const { for (double s : this->speed) { if (s != 0) { return true; } } return false; }
 
     inline void addChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = this, this->children.insert(obj); } }
     inline void removeChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = nullptr, this->children.erase(obj); } }
@@ -76,7 +76,7 @@ public:
 
     inline bool hasTestedCollision (Object *other) const { return this->tested_collisions.find(other) != this->tested_collisions.end(); }
 
-    void move(bool collision_detect, double delta_time);
+    void move(double delta_time, bool collision_detect);
     void update(double now, double delta_time, unsigned tick, bool collision_detect);
     void draw(double ratio = 1.0) const;
 
@@ -94,12 +94,12 @@ public:
     inline void setSpeed (const std::valarray<double> &_speed) { this->speed = _speed; }
     inline void setAcceleration (const std::valarray<double> &_acceleration) { this->acceleration = _acceleration; }
 
-    inline const Mesh *getMesh (void) const { return this->mesh; }
-    inline const Mesh *getCollider (void) const { return this->collider; }
+    inline Mesh *getMesh (void) const { return this->mesh; }
+    inline Mesh *getCollider (void) const { return this->collider; }
 
     inline operator bool () const { return Object::isValid(this); }
 
-    virtual inline void onCollision (const Object *other) {}
+    virtual inline void onCollision (const Object *other, const std::valarray<double> &point) {}
     virtual inline void beforeDestroy () {}
     virtual inline void afterDestroy () {}
     virtual inline void beforeUpdate (double now, double delta_time, unsigned tick) {}
