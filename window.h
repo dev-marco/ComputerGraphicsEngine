@@ -16,7 +16,7 @@ class Window {
     GLFWwindow *window;
     Object object_root, gui_root;
     std::map<unsigned, std::tuple<std::function<bool()>, double, double>> timeouts;
-    unsigned tick_counter = 0, timeout_counter = 0;
+    unsigned tick_counter = 0, timeout_counter = 1;
     double start_time = 0;
 
     bool executeTimeout(std::map<unsigned, std::tuple<std::function<bool()>, double, double>>::iterator timeout);
