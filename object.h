@@ -23,7 +23,7 @@ class Object {
     std::unordered_set<Object *> children, tested_collisions;
     Object *parent = nullptr;
     std::valarray<double> position, speed, acceleration;
-    const Shader::Program *shader = nullptr;
+    Shader::Program *shader = nullptr;
 
     static void delayedDestroy(void);
 
@@ -80,11 +80,11 @@ public:
     void update(double now, double delta_time, unsigned tick, bool collision_detect);
     void draw(double ratio = 1.0) const;
 
-    inline const Shader::Program *getShader (void) const { return this->shader; }
+    inline Shader::Program *getShader (void) const { return this->shader; }
 
     inline void destroy (void) { this->display = false, Object::marked.push(this); }
 
-    inline void setShader (const Shader::Program *program) { this->shader = program; }
+    inline void setShader (Shader::Program *program) { this->shader = program; }
 
     inline std::valarray<double> getPosition (void) const { return this->position; }
     inline std::valarray<double> getSpeed (void) const { return this->speed; }

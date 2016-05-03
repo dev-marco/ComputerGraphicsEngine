@@ -83,7 +83,7 @@ public:
         }
     }
 
-    inline void setShader (const Shader::Program *shader) { this->object_root.setShader(shader); }
+    inline void setShader (Shader::Program *shader) { this->object_root.setShader(shader); }
 
     inline void draw () const {
         Shader::Program::useShader(this->object_root.getShader()), this->object_root.draw();
