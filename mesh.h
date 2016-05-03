@@ -27,7 +27,7 @@ public:
     ) {
         double b, m = (ray_end[1] - ray_start[1]) / (ray_end[0] - ray_start[0]);
         b = ray_start[1] - m * ray_start[0];
-        return { m, -1, b };
+        return { m, -1.0, b };
     }
 
     static double distance2D (std::valarray<double> point_1, std::valarray<double> point_2) {
@@ -44,13 +44,13 @@ public:
         bool infinite = false
     ) {
         std::valarray<double> delta_ray = ray_end - ray_start;
-        double param, length_pow = std::pow(ray_start - ray_end, 2).sum();
+        double param, length_pow = (delta_ray * delta_ray).sum();
 
         if (length_pow == 0.0) {
             return distance2D(point, ray_start);
         }
 
-        param = ((point - ray_start) * (ray_end - ray_start)).sum() / length_pow;
+        param = ((point - ray_start) * delta_ray).sum() / length_pow;
 
         if (!infinite) {
             if (param < 0.0) {
@@ -96,13 +96,16 @@ public:
         double rect_width,
         double rect_height,
         std::valarray<double> circle_center,
-        double circle_radius
+        double circle_radius,
+        std::valarray<double> &near_point
     ) {
-        std::valarray<double> rect_top_right = { rect_top_left[0] + rect_width, rect_top_left[1] },
-                              rect_bottom_right = { rect_top_left[0] + rect_width, rect_top_left[1] + rect_height },
-                              rect_bottom_left = { rect_top_left[0], rect_top_left[1] + rect_height };
-
-        std::valarray<double> near_point;
+        double
+            left_pos = rect_top_left[0], right_pos = rect_top_left[0] + rect_width,
+            top_pos = rect_top_left[1], bottom_pos = rect_top_left[1] + rect_height;
+        std::valarray<double>
+            rect_top_right = { right_pos, top_pos },
+            rect_bottom_right = { right_pos, bottom_pos },
+            rect_bottom_left = { left_pos, bottom_pos };
 
         if (Mesh::collisionRayCircle2D(rect_top_left, rect_top_right, circle_center, circle_radius, near_point) ||
             Mesh::collisionRayCircle2D(rect_top_right, rect_bottom_right, circle_center, circle_radius, near_point) ||
@@ -146,7 +149,13 @@ public:
 
     inline virtual void _draw (const std::valarray<double> &position, const Background *background, double ratio) const {}
 
-    virtual bool detectCollision (const Mesh *other, const std::valarray<double> &my_position, const std::valarray<double> &other_position, bool try_inverse = true) const { return false; }
+    virtual bool detectCollision (
+        const Mesh *other,
+        const std::valarray<double> &my_position,
+        const std::valarray<double> &other_position,
+        std::valarray<double> &point,
+        bool try_inverse = true
+    ) const { return false; }
 
     inline virtual std::string getType () const { return "mesh"; }
 
@@ -186,17 +195,24 @@ public:
 
     inline virtual std::string getType () const { return "polygon2d"; }
 
-    bool detectCollision (const Mesh *other, const std::valarray<double> &my_parent_pos, const std::valarray<double> &other_parent_pos, bool try_inverse = true) const {
+    bool detectCollision (
+        const Mesh *other,
+        const std::valarray<double> &my_parent_pos,
+        const std::valarray<double> &other_parent_pos,
+        std::valarray<double> &point,
+        bool try_inverse = true
+    ) const {
 
         if (other->getType() == "polygon2d" || other->getType() == "sphere2d") {
             const Polygon2D *poly = dynamic_cast<const Polygon2D *>(other);
             if (poly) {
+                point = (this->getPosition() + other->getPosition()) * 0.5;
                 return Mesh::collisionCircles2D(my_parent_pos + this->getPosition(), this->getRadius(), other_parent_pos + other->getPosition(), poly->getRadius());
             }
         } else if (try_inverse) {
-            return other->detectCollision(this, other_parent_pos, my_parent_pos, false);
+            return other->detectCollision(this, other_parent_pos, my_parent_pos, point, false);
         }
-        return Mesh::detectCollision(other, my_parent_pos, other_parent_pos, try_inverse);
+        return Mesh::detectCollision(other, my_parent_pos, other_parent_pos, point, try_inverse);
     }
 
 };
@@ -255,7 +271,7 @@ public:
 
     inline std::string getType () const { return "rectangle2d"; }
 
-    bool detectCollision (const Mesh *other, const std::valarray<double> &my_parent_pos, const std::valarray<double> &other_parent_pos, bool try_inverse = true) const {
+    bool detectCollision (const Mesh *other, const std::valarray<double> &my_parent_pos, const std::valarray<double> &other_parent_pos, std::valarray<double> &point, bool try_inverse = true) const {
         if (other->getType() == "rectangle2d") {
             const Rectangle2D *rect = dynamic_cast<const Rectangle2D *>(other);
             if (rect) {
@@ -264,12 +280,12 @@ public:
         } else if (other->getType() == "polygon2d" || other->getType() == "sphere2d") {
             const Polygon2D *poly = dynamic_cast<const Polygon2D *>(other);
             if (poly) {
-                return Mesh::collisionRectangleCircle2D(my_parent_pos + this->getPosition(), this->getWidth(), this->getHeight(), other_parent_pos + other->getPosition(), poly->getRadius());
+                return Mesh::collisionRectangleCircle2D(my_parent_pos + this->getPosition(), this->getWidth(), this->getHeight(), other_parent_pos + other->getPosition(), poly->getRadius(), point);
             }
         } else if (try_inverse) {
-            return other->detectCollision(this, other_parent_pos, my_parent_pos, false);
+            return other->detectCollision(this, other_parent_pos, my_parent_pos, point, false);
         }
-        return Mesh::detectCollision(other, my_parent_pos, other_parent_pos, try_inverse);
+        return Mesh::detectCollision(other, my_parent_pos, other_parent_pos, point, try_inverse);
     }
 
 };
