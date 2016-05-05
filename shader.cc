@@ -1,4 +1,8 @@
 #include "shader.h"
 
-Shader::Program *Shader::Program::current_shader = nullptr;
-std::stack<Shader::Program *> Shader::Program::programs;
+namespace Engine {
+    namespace Shader {
+        Program *Program::current_shader = nullptr;
+        std::stack<Program *> Program::programs;
+    };
+};

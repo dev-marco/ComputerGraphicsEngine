@@ -15,119 +15,122 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-namespace Event {
+namespace Engine {
 
-    template <
-        typename FType,
-        typename ...FunctionArgs
-    > class EventBase {
+    namespace Event {
 
-    public:
+        template <
+            typename FType,
+            typename ...FunctionArgs
+        > class EventBase {
 
-        typedef FType FunctionType;
+        public:
 
-        static void beforeEvents (GLFWwindow *window, FunctionArgs... args) {};
-        static void triggerEvent (GLFWwindow *window, FunctionType ev, FunctionArgs... args) {
-            ev(window, args...);
+            typedef FType FunctionType;
+
+            static void beforeEvents (GLFWwindow *window, FunctionArgs... args) {};
+            static void triggerEvent (GLFWwindow *window, FunctionType ev, FunctionArgs... args) {
+                ev(window, args...);
+            };
+            static void afterEvents (GLFWwindow *window, FunctionArgs... args) {};
+
         };
-        static void afterEvents (GLFWwindow *window, FunctionArgs... args) {};
 
-    };
+        class MouseMove : public EventBase<
+            std::function<void(GLFWwindow *, double, double, double, double)>,
+            double, double
+        > {
 
-    class MouseMove : public EventBase<
-        std::function<void(GLFWwindow *, double, double, double, double)>,
-        double, double
-    > {
+        static double posx, posy;
 
-    static double posx, posy;
+        public:
 
-    public:
+            static std::unordered_map<GLFWwindow *, std::list<std::tuple<std::function<void(GLFWwindow *, double, double, double, double)>, std::string, unsigned, bool>>> trigger_list;
 
-        static std::unordered_map<GLFWwindow *, std::list<std::tuple<std::function<void(GLFWwindow *, double, double, double, double)>, std::string, unsigned, bool>>> trigger_list;
+            inline static void beforeEvents (GLFWwindow *window, double x, double y) {
+                int width, height;
+                glfwGetFramebufferSize(window, &width, &height);
+                MouseMove::posx = x / (width / 2.0) - 1.0, MouseMove::posy = y / (height / 2.0) - 1.0;
+            }
 
-        inline static void beforeEvents (GLFWwindow *window, double x, double y) {
-            int width, height;
-            glfwGetFramebufferSize(window, &width, &height);
-            MouseMove::posx = x / (width / 2.0) - 1.0, MouseMove::posy = y / (height / 2.0) - 1.0;
-        }
+            inline static void triggerEvent (GLFWwindow *window, FunctionType func, double x, double y) {
+                func(window, x, y, MouseMove::posx, MouseMove::posy);
+            }
+        };
 
-        inline static void triggerEvent (GLFWwindow *window, FunctionType func, double x, double y) {
-            func(window, x, y, MouseMove::posx, MouseMove::posy);
-        }
-    };
+        template <
+            typename EventType
+        > class Event {
 
-    template <
-        typename EventType
-    > class Event {
+            typedef typename EventType::FunctionType FunctionType;
 
-        typedef typename EventType::FunctionType FunctionType;
+            // pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-        // pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
+        public:
 
-    public:
+            template <typename ...FunctionArgs>
+            static void trigger (GLFWwindow *window, FunctionArgs... args) {
+                FunctionType ev;
+                std::string id;
+                unsigned counter;
+                auto func_data = EventType::trigger_list[window].begin();
+                bool marked;
 
-        template <typename ...FunctionArgs>
-        static void trigger (GLFWwindow *window, FunctionArgs... args) {
-            FunctionType ev;
-            std::string id;
-            unsigned counter;
-            auto func_data = EventType::trigger_list[window].begin();
-            bool marked;
+                // pthread_mutex_lock(&event_mutex);
+                EventType::beforeEvents(window, args...);
 
-            // pthread_mutex_lock(&event_mutex);
-            EventType::beforeEvents(window, args...);
+                while (func_data != EventType::trigger_list[window].end()) {
 
-            while (func_data != EventType::trigger_list[window].end()) {
+                    std::tie(ev, id, counter, marked) = *func_data;
+                    auto func_erase = func_data++;
 
-                std::tie(ev, id, counter, marked) = *func_data;
-                auto func_erase = func_data++;
-
-                if (!marked) {
-                    EventType::triggerEvent(window, ev, args...);
-                    if (counter != 0) {
-                        --counter;
-                        if (counter == 0) {
-                            EventType::trigger_list[window].erase(func_erase);
-                        } else {
-                            std::get<2>(*func_erase) = counter;
+                    if (!marked) {
+                        EventType::triggerEvent(window, ev, args...);
+                        if (counter != 0) {
+                            --counter;
+                            if (counter == 0) {
+                                EventType::trigger_list[window].erase(func_erase);
+                            } else {
+                                std::get<2>(*func_erase) = counter;
+                            }
                         }
+                    } else {
+                        EventType::trigger_list[window].erase(func_erase);
                     }
-                } else {
-                    EventType::trigger_list[window].erase(func_erase);
                 }
+
+                EventType::afterEvents(window, args...);
+                // pthread_mutex_unlock(&event_mutex);
             }
 
-            EventType::afterEvents(window, args...);
-            // pthread_mutex_unlock(&event_mutex);
-        }
-
-        inline static void add (GLFWwindow *window, const FunctionType &func, const std::string &id = "", unsigned limit = 0) {
-            EventType::trigger_list[window].push_back(std::forward_as_tuple(func, id, limit, false));
-        }
-
-        inline static void add (GLFWwindow *window, const FunctionType &func, unsigned limit = 0) {
-            Event<EventType>::add(window, func, "", limit);
-        }
-
-        static void erase(GLFWwindow *window, const FunctionType &func) {
-            for (const auto &ev : EventType::trigger_list[window]) {
-                if (std::get<0>(ev) == func) {
-                    std::get<3>(ev) = true;
-                }
+            inline static void add (GLFWwindow *window, const FunctionType &func, const std::string &id = "", unsigned limit = 0) {
+                EventType::trigger_list[window].push_back(std::forward_as_tuple(func, id, limit, false));
             }
-        }
 
-        static void erase(GLFWwindow *window, const std::string &id) {
-            if (id != "") {
-                for (auto &ev : EventType::trigger_list[window]) {
-                    if (std::get<1>(ev) == id) {
+            inline static void add (GLFWwindow *window, const FunctionType &func, unsigned limit = 0) {
+                Event<EventType>::add(window, func, "", limit);
+            }
+
+            static void erase(GLFWwindow *window, const FunctionType &func) {
+                for (const auto &ev : EventType::trigger_list[window]) {
+                    if (std::get<0>(ev) == func) {
                         std::get<3>(ev) = true;
                     }
                 }
             }
-        }
+
+            static void erase(GLFWwindow *window, const std::string &id) {
+                if (id != "") {
+                    for (auto &ev : EventType::trigger_list[window]) {
+                        if (std::get<1>(ev) == id) {
+                            std::get<3>(ev) = true;
+                        }
+                    }
+                }
+            }
 
 
+        };
     };
 };
 
