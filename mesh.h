@@ -20,9 +20,52 @@ namespace Engine {
 
     public:
 
-        static constexpr long double PI = 3.141592653589793238462643383279502884L;
+        enum Axis {
 
-        static std::valarray<double> rayEquation (
+            AXIS_X,
+            AXIS_Y,
+            AXIS_Z
+
+        };
+
+        static constexpr long double
+            PI = 3.141592653589793238462643383279502884L,
+            DEG45 = PI / 4.0,
+            DEG90 = PI / 2.0,
+            DEG135 = DEG90 + DEG45,
+            DEG225 = -DEG135,
+            DEG270 = -DEG90,
+            DEG315 = -DEG45;
+
+        inline static double raySize (const std::valarray<double> &ray) {
+            return std::sqrt((ray * ray).sum());
+        }
+
+        inline static std::valarray<double> resizeRay (const std::valarray<double> &ray, double vector_size, double new_size) {
+            return ray * (new_size / vector_size);
+        }
+
+        inline static std::valarray<double> resizeRay (const std::valarray<double> &ray, double new_size) {
+            return Mesh::resizeRay(ray, Mesh::raySize(ray), new_size);
+        }
+
+        static std::valarray<double> rotateRay (const std::valarray<double> &ray, double angle, Axis axis = Mesh::Axis::AXIS_Z) {
+
+            const double
+                sin_angle = std::sin(angle),
+                cos_angle = std::cos(angle);
+
+            switch (axis) {
+                case Axis::AXIS_X:
+                    return { ray[0], cos_angle * ray[1] - sin_angle * ray[2], sin_angle * ray[1] + cos_angle * ray[2] };
+                case Axis::AXIS_Y:
+                    return { cos_angle * ray[0] + sin_angle * ray[2], ray[1], cos_angle * ray[2] - sin_angle * ray[0] };
+                default:
+                    return { cos_angle * ray[0] - sin_angle * ray[1], sin_angle * ray[0] + cos_angle * ray[1], ray[2] };
+            }
+        }
+
+        inline static std::valarray<double> rayEquation (
             const std::valarray<double> &ray_start,
             const std::valarray<double> &ray_end
         ) {
@@ -31,10 +74,9 @@ namespace Engine {
             return { m, -1.0, b };
         }
 
-        static double distance2D (std::valarray<double> point_1, std::valarray<double> point_2) {
+        inline static double distance2D (std::valarray<double> point_1, std::valarray<double> point_2) {
             std::valarray<double> diff = point_1 - point_2;
-            diff *= diff;
-            return std::sqrt(diff.sum());
+            return std::sqrt((diff * diff).sum());
         }
 
         static double distanceRayToPoint2D (
@@ -73,15 +115,15 @@ namespace Engine {
             double radius_2
         ) { return Mesh::distance2D(position_1, position_2) <= (radius_1 + radius_2); }
 
-        inline static bool collisionRectangles2D (
-            std::valarray<double> position_1,
-            double width_1,
-            double height_1,
-            std::valarray<double> position_2,
-            double width_2,
-            double height_2
-        ) { return position_1[0] < (position_2[0] + width_2 ) && (position_1[0] + width_1 ) > position_2[0] &&
-                   position_1[1] < (position_2[1] + height_2) && (position_1[1] + height_1) > position_2[1]; }
+        // inline static bool collisionRectangles2D (
+        //     std::valarray<double> position_1,
+        //     double width_1,
+        //     double height_1,
+        //     std::valarray<double> position_2,
+        //     double width_2,
+        //     double height_2
+        // ) { return position_1[0] < (position_2[0] + width_2 ) && (position_1[0] + width_1 ) > position_2[0] &&
+        //            position_1[1] < (position_2[1] + height_2) && (position_1[1] + height_1) > position_2[1]; }
 
         inline static bool collisionRayCircle2D (
             std::valarray<double> ray_start,
@@ -93,20 +135,15 @@ namespace Engine {
         ) { return Mesh::distanceRayToPoint2D(ray_start, ray_end, circle_center, near_point, infinite) <= circle_radius; }
 
         static bool collisionRectangleCircle2D (
-            std::valarray<double> rect_top_left,
-            double rect_width,
-            double rect_height,
+            const std::valarray<double> &rect_top_left,
+            const std::valarray<double> &rect_bottom_left,
+            const std::valarray<double> &rect_bottom_right,
+            const std::valarray<double> &rect_top_right,
+            double rect_angle,
             std::valarray<double> circle_center,
             double circle_radius,
             std::valarray<double> &near_point
         ) {
-            double
-                left_pos = rect_top_left[0], right_pos = rect_top_left[0] + rect_width,
-                top_pos = rect_top_left[1], bottom_pos = rect_top_left[1] + rect_height;
-            std::valarray<double>
-                rect_top_right = { right_pos, top_pos },
-                rect_bottom_right = { right_pos, bottom_pos },
-                rect_bottom_left = { left_pos, bottom_pos };
 
             if (Mesh::collisionRayCircle2D(rect_top_left, rect_top_right, circle_center, circle_radius, near_point) ||
                 Mesh::collisionRayCircle2D(rect_top_right, rect_bottom_right, circle_center, circle_radius, near_point) ||
@@ -115,9 +152,14 @@ namespace Engine {
                 return true;
             }
 
+            const std::valarray<double>
+                rot_rect_top_left = Mesh::rotateRay(rect_top_left, -rect_angle),
+                rot_rect_bottom_right = Mesh::rotateRay(rect_bottom_right, -rect_angle),
+                rot_circle_center = Mesh::rotateRay(circle_center, -rect_angle);
+
             if (
-                rect_top_left[0] <= circle_center[0] && circle_center[0] <= rect_bottom_right[0] &&
-                rect_top_left[1] <= circle_center[1] && circle_center[1] <= rect_bottom_right[1]
+                rot_rect_top_left[0] <= rot_circle_center[0] && rot_circle_center[0] <= rot_rect_bottom_right[0] &&
+                rot_rect_top_left[1] <= rot_circle_center[1] && rot_circle_center[1] <= rot_rect_bottom_right[1]
             ) {
                 near_point = circle_center;
                 return true;
@@ -126,19 +168,21 @@ namespace Engine {
             return false;
         }
 
-        Mesh (const std::array<double, 3> &_position = { 0.0, 0.0, 0.0 }) :
-            position(_position.data(), 3) {};
+        Mesh (const std::valarray<double> &_position = { 0.0, 0.0, 0.0 }) :
+            position(_position) {};
 
         virtual ~Mesh () {}
 
-        void draw (const std::valarray<double> &position, const Background *background, bool only_border = false, double ratio = 1.0) const {
+        void draw (const std::valarray<double> &offset, const Background *background, bool only_border = false) const {
 
-            std::valarray<double> offset = position + this->position;
+            this->_draw(offset, background, only_border);
 
-            this->_draw(offset, background, only_border, ratio);
+            if (!this->children.empty()) {
+                std::valarray<double> position = offset + this->getPosition();
 
-            for (const auto &mesh : this->children) {
-                mesh->draw(offset, background, only_border, ratio);
+                for (const auto &mesh : this->children) {
+                    mesh->draw(position, background, only_border);
+                }
             }
         }
 
@@ -146,9 +190,9 @@ namespace Engine {
 
         inline const std::valarray<double> &getPosition () const { return this->position; }
 
-        inline void setPosition (const std::array<double, 3> _position) { this->position = std::valarray<double>(_position.data(), 3); }
+        inline void setPosition (const std::valarray<double> _position) { this->position = std::valarray<double>(_position); }
 
-        inline virtual void _draw (const std::valarray<double> &position, const Background *background, bool only_border, double ratio) const {}
+        inline virtual void _draw (const std::valarray<double> &offset, const Background *background, bool only_border) const {}
 
         virtual bool detectCollision (
             const Mesh *other,
@@ -156,9 +200,83 @@ namespace Engine {
             const std::valarray<double> &other_position,
             std::valarray<double> &point,
             bool try_inverse = true
-        ) const { return false; }
+        ) const {
+            if (try_inverse) {
+                return other->detectCollision(this, other_position, my_position, point, false);
+            }
+            return false;
+        }
 
         inline virtual std::string getType () const { return "mesh"; }
+    };
+
+    class Rectangle2D : public Mesh {
+
+        double width, height, angle;
+
+        std::valarray<double> top_right, bottom_left, bottom_right;
+
+    public:
+        inline Rectangle2D (const std::valarray<double> &_position, double _width, double _height, double _angle = 0.0) :
+            Mesh(_position), width(_width), height(_height), angle(_angle) {
+            this->updatePositions();
+        }
+
+        void updatePositions (void) {
+            const double
+                height_angle = this->getAngle() - DEG90;
+
+            const std::valarray<double>
+                delta_height = { this->getHeight() * std::cos(height_angle), this->getHeight() * std::sin(height_angle), 0.0 };
+
+            this->top_right = this->getTopLeftPosition() + std::valarray<double>(
+                { this->getWidth() * std::cos(this->getAngle()), this->getWidth() * std::sin(this->getAngle()), 0.0 }
+            );
+
+            this->bottom_left = this->getTopLeftPosition() + delta_height;
+            this->bottom_right = this->getTopRightPosition() + delta_height;
+
+        }
+
+        double getWidth (void) const { return this->width; }
+        double getHeight (void) const { return this->height; }
+        double getAngle (void) const { return this->angle; }
+
+        inline void setWidth (double _width) { this->width = _width, this->updatePositions(); }
+        inline void setHeight (double _height) { this->height = _height, this->updatePositions(); }
+        inline void setAngle (double _angle) { this->angle = _angle, this->updatePositions(); }
+
+        inline const std::valarray<double> &getTopLeftPosition (void) const { return this->getPosition(); }
+        inline const std::valarray<double> &getTopRightPosition (void) const { return this->top_right; }
+        inline const std::valarray<double> &getBottomLeftPosition (void) const { return this->bottom_left; }
+        inline const std::valarray<double> &getBottomRightPosition (void) const { return this->bottom_right; }
+
+        void _draw (const std::valarray<double> &offset, const Background *background, bool only_border) const {
+
+            const std::valarray<double>
+                top_left = this->getTopLeftPosition() + offset,
+                bottom_left = this->getBottomLeftPosition() + offset,
+                bottom_right = this->getBottomRightPosition() + offset,
+                top_right = this->getTopRightPosition() + offset;
+
+            if (only_border) {
+                glBegin(GL_LINE_LOOP);
+            } else {
+                glBegin(GL_TRIANGLE_FAN);
+            }
+
+            background->apply();
+
+            glVertex3d(top_left[0], top_left[1], top_left[2]);
+            glVertex3d(bottom_left[0], bottom_left[1], bottom_left[2]);
+            glVertex3d(bottom_right[0], bottom_right[1], bottom_right[2]);
+            glVertex3d(top_right[0], top_right[1], top_right[2]);
+
+            glEnd();
+
+        }
+
+        inline std::string getType (void) const { return "rectangle2d"; }
 
     };
 
@@ -169,10 +287,12 @@ namespace Engine {
 
     public:
 
-        inline Polygon2D (const std::array<double, 3> &_position, double _radius, int _sides, double _angle = 0.0) :
+        inline Polygon2D (const std::valarray<double> &_position, double _radius, int _sides, double _angle = 0.0) :
             Mesh(_position), radius(_radius), angle(_angle), sides(_sides) {};
 
-        void _draw (const std::valarray<double> &position, const Background *background, bool only_border, double ratio) const {
+        void _draw (const std::valarray<double> &offset, const Background *background, bool only_border) const {
+
+            std::valarray<double> position = offset + this->getPosition();
 
             double step = (Polygon2D::PI * 2.0) / static_cast<double>(this->sides);
             if (only_border) {
@@ -185,8 +305,8 @@ namespace Engine {
 
             for (int i = 0; i < this->sides; i++) {
 
-                double ang = i * step + this->angle;
-                glVertex3d(position[0] + this->radius * cos(ang), position[1] + this->radius * sin(ang) * ratio, position[2]);
+                double ang = i * step + this->getAngle();
+                glVertex3d(position[0] + this->getRadius() * std::cos(ang), position[1] + this->getRadius() * std::sin(ang), position[2]);
 
             }
 
@@ -194,109 +314,63 @@ namespace Engine {
 
         }
 
-        inline double getRadius () const { return this->radius; }
+        inline double getRadius (void) const { return this->radius; }
+        inline double getAngle (void) const { return this->angle; }
 
         inline void setRadius (double _radius) { this->radius = _radius; }
 
         inline virtual std::string getType () const { return "polygon2d"; }
 
+        Mesh *getCollisionRectangle (const std::valarray<double> &speed) const {
+
+            const double angle = std::atan2(speed[1], speed[0]);
+
+            const std::valarray<double>
+                difference = {
+                    this->getRadius() * static_cast<double>(std::cos(angle - DEG90)),
+                    this->getRadius() * static_cast<double>(std::sin(angle - DEG90))
+                },
+                top_position = this->getPosition() + difference;
+
+            return new Rectangle2D(top_position, Mesh::raySize(speed), this->getRadius() * 2.0, angle);
+        }
+
         bool detectCollision (
             const Mesh *other,
-            const std::valarray<double> &my_parent_pos,
-            const std::valarray<double> &other_parent_pos,
+            const std::valarray<double> &my_offset,
+            const std::valarray<double> &other_offset,
             std::valarray<double> &point,
             bool try_inverse = true
         ) const {
 
             if (other->getType() == "polygon2d" || other->getType() == "sphere2d") {
-                const Polygon2D *poly = dynamic_cast<const Polygon2D *>(other);
-                if (poly) {
-                    point = (this->getPosition() + other->getPosition()) * 0.5;
-                    return Mesh::collisionCircles2D(my_parent_pos + this->getPosition(), this->getRadius(), other_parent_pos + other->getPosition(), poly->getRadius());
-                }
-            } else if (try_inverse) {
-                return other->detectCollision(this, other_parent_pos, my_parent_pos, point, false);
+                const Polygon2D *poly = static_cast<const Polygon2D *>(other);
+                point = (this->getPosition() + other->getPosition()) * 0.5;
+                return Mesh::collisionCircles2D(my_offset + this->getPosition(), this->getRadius(), other_offset + other->getPosition(), poly->getRadius());
+            } else if (other->getType() == "rectangle2d") {
+                const Rectangle2D *rect = static_cast<const Rectangle2D *>(other);
+                return Mesh::collisionRectangleCircle2D(
+                    other_offset + rect->getTopLeftPosition(),
+                    other_offset + rect->getBottomLeftPosition(),
+                    other_offset + rect->getBottomRightPosition(),
+                    other_offset + rect->getTopRightPosition(),
+                    rect->getAngle(),
+                    my_offset + this->getPosition(),
+                    this->getRadius(),
+                    point
+                );
             }
-            return Mesh::detectCollision(other, my_parent_pos, other_parent_pos, point, try_inverse);
+            return Mesh::detectCollision(other, my_offset, other_offset, point, try_inverse);
         }
 
     };
 
     class Sphere2D : public Polygon2D {
     public:
-        Sphere2D (const std::array<double, 3> &_position, double _radius) :
+        Sphere2D (const std::valarray<double> &_position, double _radius) :
             Polygon2D (_position, _radius, 360, 0.0) {}
 
         inline virtual std::string getType () const { return "sphere2d"; }
-    };
-
-    class Rectangle2D : public Mesh {
-
-        double width, height;
-
-    public:
-
-        Rectangle2D (const std::array<double, 3> &_position, double _width, double _height) :
-            Mesh(_position), width(_width), height(_height) {};
-
-        inline void _draw (const std::valarray<double> &position, const Background *background, bool only_border, double ratio) const {
-
-            if (only_border) {
-                glBegin(GL_LINE_LOOP);
-            } else {
-                glBegin(GL_TRIANGLE_FAN);
-            }
-
-            background->apply();
-
-            glVertex3d(position[0], position[1] + height * ratio, position[2]);
-            // for (double i = position[1] + height * ratio; i > position[1]; i -= 0.001) {
-            //     glVertex3d(position[0], i, position[2]);
-            // }
-
-            glVertex3d(position[0], position[1], position[2]);
-            // for (double i = position[0]; i < position[0] + width; i += 0.001) {
-            //     glVertex3d(i, position[1], position[2]);
-            // }
-
-            glVertex3d(position[0] + width, position[1], position[2]);
-            // for (double i = position[1]; i < position[1] + height; i += 0.001) {
-            //     glVertex3d(position[0] + width, i, position[2]);
-            // }
-
-            glVertex3d(position[0] + width, position[1] + height * ratio, position[2]);
-            // for (double i = position[0] + width; i > position[0]; i -= 0.001) {
-            //     glVertex3d(i, position[1] + height, position[2]);
-            // }
-
-            glEnd();
-        }
-
-        inline double getWidth () const { return this->width; }
-        inline double getHeight () const { return this->height; }
-
-        inline void setWidth (double _width) { this->width = _width; }
-        inline void setHeight (double _height) { this->height = _height; }
-
-        inline std::string getType () const { return "rectangle2d"; }
-
-        bool detectCollision (const Mesh *other, const std::valarray<double> &my_parent_pos, const std::valarray<double> &other_parent_pos, std::valarray<double> &point, bool try_inverse = true) const {
-            if (other->getType() == "rectangle2d") {
-                const Rectangle2D *rect = dynamic_cast<const Rectangle2D *>(other);
-                if (rect) {
-                    return Mesh::collisionRectangles2D(my_parent_pos + this->getPosition(), this->getWidth(), this->getHeight(), other_parent_pos + other->getPosition(), rect->getWidth(), rect->getHeight());
-                }
-            } else if (other->getType() == "polygon2d" || other->getType() == "sphere2d") {
-                const Polygon2D *poly = dynamic_cast<const Polygon2D *>(other);
-                if (poly) {
-                    return Mesh::collisionRectangleCircle2D(my_parent_pos + this->getPosition(), this->getWidth(), this->getHeight(), other_parent_pos + other->getPosition(), poly->getRadius(), point);
-                }
-            } else if (try_inverse) {
-                return other->detectCollision(this, other_parent_pos, my_parent_pos, point, false);
-            }
-            return Mesh::detectCollision(other, my_parent_pos, other_parent_pos, point, try_inverse);
-        }
-
     };
 };
 
