@@ -3,31 +3,35 @@
 
 #include <string>
 
-namespace Shader {
+namespace Engine {
+	namespace Shader {
 
-	const std::string wave_fragment = R"_wave_frag(
-		#version 120
+		const std::string wave_fragment = R"_wave_frag(
+			#version 120
 
-		void main (void) {
-			gl_FragColor = gl_Color;
-		}
-	)_wave_frag";
+			void main (void) {
+				gl_FragColor = gl_Color;
+			}
+		)_wave_frag";
 
-	const std::string wave_vertex = R"_wave_vert(
-		#version 120
+		const std::string wave_vertex = R"_wave_vert(
+			#version 120
 
-		uniform float time;
+			uniform float time;
+			uniform float parameter;
 
-		void main (void) {
+			void main (void) {
 
-			gl_FrontColor = gl_Color;
-			vec4 v = vec4(gl_Vertex);
-			v.z += (sin(5.0 * v.x + time) * 0.25) - 0.25f;
+				gl_FrontColor = gl_Color;
+				vec4 v = vec4(gl_Vertex);
+				float increment = 0.25f * min(sqrt(parameter) / 2.0f, 1.5f);
+				v.z += (sin(5.0 * v.x + time) * increment) - increment;
 
-			gl_Position = gl_ModelViewProjectionMatrix * v;
-		}
-	)_wave_vert";
+				gl_Position = gl_ModelViewProjectionMatrix * v;
+			}
+		)_wave_vert";
 
-}
+	};
+};
 
 #endif
