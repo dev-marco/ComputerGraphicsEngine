@@ -31,18 +31,6 @@ namespace Engine {
 
     public:
 
-        inline static double vectorSize (const std::valarray<double> &vector) {
-            return std::sqrt((vector * vector).sum());
-        }
-
-        inline static std::valarray<double> resizeVector (const std::valarray<double> &vector, double vector_size, double new_size) {
-            return vector * (new_size / vector_size);
-        }
-
-        inline static std::valarray<double> resizeVector (const std::valarray<double> &vector, double new_size) {
-            return Object::resizeVector(vector, Object::vectorSize(vector), new_size);
-        }
-
         inline static bool isValid (const Object *obj) { return Object::invalid.find(obj) == Object::invalid.end(); }
 
         inline Object (
@@ -78,7 +66,7 @@ namespace Engine {
 
         void move(double delta_time, bool collision_detect);
         void update(double now, double delta_time, unsigned tick, bool collision_detect);
-        void draw(double ratio = 1.0, bool only_border = false) const;
+        void draw(bool only_border = false) const;
 
         inline Shader::Program *getShader (void) const { return this->shader; }
 
@@ -104,8 +92,8 @@ namespace Engine {
         virtual inline void afterDestroy () {}
         virtual inline void beforeUpdate (double now, double delta_time, unsigned tick) {}
         virtual inline void afterUpdate (double now, double delta_time, unsigned tick) {}
-        virtual inline void beforeDraw (double ratio, bool only_border) const {}
-        virtual inline void afterDraw (double ratio, bool only_border) const {}
+        virtual inline void beforeDraw (bool only_border) const {}
+        virtual inline void afterDraw (bool only_border) const {}
 
         virtual inline std::string getType () const { return "object"; }
 

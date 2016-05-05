@@ -68,7 +68,7 @@ namespace Engine {
 
                     for (auto &child : std::unordered_set<Object *>(moving)) {
                         for (auto &other : this->children) {
-                            if (child != other && !collided[child].count(other) && child->detectCollision(other, point)) {
+                            if (child != other && other->collides() && !collided[child].count(other) && child->detectCollision(other, point)) {
                                 child->onCollision(other, point);
                                 other->onCollision(child, point);
                                 collided[other].insert(child);
@@ -115,24 +115,24 @@ namespace Engine {
         }
     }
 
-    void Object::draw (double ratio, bool only_border) const {
+    void Object::draw (bool only_border) const {
 
         if (Object::isValid(this)) {
             if (this->display) {
 
-                this->beforeDraw(ratio, only_border);
+                this->beforeDraw(only_border);
 
                 // Shader::push(this->shader);
 
-                this->mesh->draw(this->position, this->background, only_border, ratio);
+                this->mesh->draw(this->position, this->background, only_border);
 
                 for (const auto &child : this->children) {
-                    child->draw(ratio, only_border);
+                    child->draw(only_border);
                 }
 
                 // Shader::pop();
 
-                this->afterDraw(ratio, only_border);
+                this->afterDraw(only_border);
             }
         } else {
             std::cout << "drawing error" << std::endl;
