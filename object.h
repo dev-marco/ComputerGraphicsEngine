@@ -47,13 +47,13 @@ namespace Engine {
 
         inline virtual ~Object () { Object::invalid.insert(this); }
 
-        inline bool detectCollision (const Object *other, std::valarray<double> &point) const {
-            return this->getCollider()->detectCollision(other->getCollider(), this->getPosition(), other->getPosition(), point);
+        inline bool detectCollision (const Object *other, const std::valarray<double> &my_speed, const std::valarray<double> &other_speed, std::valarray<double> &point) const {
+            return this->getCollider()->detectCollision(other->getCollider(), this->getPosition(), my_speed, other->getPosition(), other_speed, point);
         }
 
         inline bool collides () const { return this->collider != nullptr; }
 
-        inline bool isMoving (void) const { for (double s : this->speed) { if (s != 0) { return true; } } return false; }
+        inline bool isMoving (void) const { return !Mesh::zero(this->getSpeed()); }
 
         inline void addChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = this, this->children.push_back(obj); } }
         inline void removeChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = nullptr, this->children.remove(obj); } }

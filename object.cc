@@ -54,7 +54,7 @@ namespace Engine {
 
             if (!moving.empty()) {
 
-                constexpr unsigned collision_samples = 16;
+                constexpr unsigned collision_samples = 4;
                 const double multiplier = delta_time / static_cast<double>(collision_samples);
                 std::valarray<double> point;
 
@@ -67,8 +67,16 @@ namespace Engine {
                     }
 
                     for (auto &child : std::unordered_set<Object *>(moving)) {
+
+                        const auto delta_speed = child->getSpeed() * multiplier;
+
                         for (auto &other : this->children) {
-                            if (child != other && other->collides() && !collided[child].count(other) && child->detectCollision(other, point)) {
+                            if (
+                                child != other &&
+                                other->collides() &&
+                                !collided[child].count(other) &&
+                                child->detectCollision(other, delta_speed, other->getSpeed() * multiplier, point)
+                            ) {
                                 child->onCollision(other, point);
                                 other->onCollision(child, point);
                                 collided[other].insert(child);
@@ -91,7 +99,7 @@ namespace Engine {
     void Object::update (double now, double delta_time, unsigned tick, bool collision_detect) {
 
         static bool destroy_shared = true;
-        bool destroy_local = destroy_shared;
+        const bool destroy_local = destroy_shared;
 
         destroy_shared = false;
 
