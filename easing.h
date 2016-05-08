@@ -329,7 +329,7 @@ namespace Engine {
     			return b + (c * (t * t * (((s + 1.0) * t) + s) + 1.0));
     		}
 
-    		inline double Back (double t, double b, double c, double d, double s = 1.70158) {
+    		inline double InOut (double t, double b, double c, double d, double s = 1.70158) {
 
     			t /= (d * 0.5);
     			c *= 0.5;
