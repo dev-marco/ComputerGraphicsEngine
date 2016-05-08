@@ -1,6 +1,8 @@
 #include "object.h"
+#include <typeinfo>
 
 namespace Engine {
+
     std::unordered_set<const Object *> Object::invalid{ NULL };
     std::stack<Object *> Object::marked{};
 
@@ -63,12 +65,8 @@ namespace Engine {
                     static std::unordered_map<Object *, std::unordered_set<Object *>> collided;
 
                     for (auto &child : moving) {
-                        child->setPosition(child->getPosition() + child->getSpeed() * multiplier);
-                    }
 
-                    for (auto &child : std::unordered_set<Object *>(moving)) {
-
-                        const auto delta_speed = child->getSpeed() * multiplier;
+                        const std::valarray<double> delta_speed(child->getSpeed() * multiplier);
 
                         for (auto &other : this->children) {
                             if (
@@ -82,6 +80,10 @@ namespace Engine {
                                 collided[other].insert(child);
                             }
                         }
+                    }
+
+                    for (auto &child : moving) {
+                        child->setPosition(child->getPosition() + child->getSpeed() * multiplier);
                     }
 
                     collided.clear();
