@@ -84,66 +84,66 @@ namespace Engine {
         return distance(ray_start, ray_end);
     }
 
-    bool Mesh::collisionPointTriangle2D (
-        const std::valarray<double> &point,
-        const std::valarray<double> &tri_point_1,
-        const std::valarray<double> &tri_point_2,
-        const std::valarray<double> &tri_point_3
-    ) {
-        double sum = 0.0;
-
-        for (const auto &edge : edgesTriangle2D(tri_point_1, tri_point_2, tri_point_3)) {
-            sum += areaTriangle2D(edge[0], point, edge[1]);
-        }
-
-        return sum <= (areaTriangle2D(tri_point_1, tri_point_2, tri_point_3) + EPSILON);
-    }
-
-    bool Mesh::collisionPointRectangle2D (
-        const std::valarray<double> &point,
-        const std::valarray<double> &rect_top_left,
-        const std::valarray<double> &rect_bottom_left,
-        const std::valarray<double> &rect_bottom_right,
-        const std::valarray<double> &rect_top_right
-    ) {
-        double sum = 0.0;
-
-        for (const auto &edge : edgesRectangle2D(rect_top_left, rect_bottom_left, rect_bottom_right, rect_top_right)) {
-            sum += areaTriangle2D(edge[0], point, edge[1]);
-        }
-
-        return sum <= (areaRectangle2D(rect_top_left, rect_bottom_left, rect_bottom_right) + EPSILON);
-    }
-
     bool Mesh::collisionRectangles2D (
         const std::valarray<double> &rect_1_top_left,
         const std::valarray<double> &rect_1_bottom_left,
         const std::valarray<double> &rect_1_bottom_right,
         const std::valarray<double> &rect_1_top_right,
+        const double rect_1_angle,
         const std::valarray<double> &rect_2_top_left,
         const std::valarray<double> &rect_2_bottom_left,
         const std::valarray<double> &rect_2_bottom_right,
         const std::valarray<double> &rect_2_top_right,
+        const double rect_2_angle,
         std::valarray<double> &near_point
     ) {
-        const std::array<std::array<std::valarray<double>, 2>, 4>
-            rect_1_edges = edgesRectangle2D(rect_1_top_left, rect_1_bottom_left, rect_1_bottom_right, rect_1_top_right),
-            rect_2_edges = edgesRectangle2D(rect_2_top_left, rect_2_bottom_left, rect_2_bottom_right, rect_2_top_right);
 
-        std::valarray<double> ray_end;
+        if (rect_1_angle == rect_2_angle) {
 
-        for (const auto &rect_1_edge : rect_1_edges) {
-            for (const auto &rect_2_edge : rect_2_edges) {
-                if (distanceRays(rect_1_edge[0], rect_1_edge[1], rect_2_edge[0], rect_2_edge[1], near_point, ray_end) <= EPSILON) {
-                    return true;
+            if (rect_1_angle == 0.0) {
+
+                return
+                    rect_1_top_left[0] < rect_2_bottom_right[0] &&
+                    rect_1_bottom_right[0] > rect_2_top_left[0] &&
+                    rect_1_top_left[1] < rect_2_bottom_right[1] &&
+                    rect_1_bottom_right[1] > rect_2_top_left[1];
+
+            } else {
+
+                const std::valarray<double>
+                    rot_rect_1_top_left = rotate(rect_1_top_left, -rect_1_angle),
+                    rot_rect_1_bottom_right = rotate(rect_1_bottom_right, -rect_1_angle),
+                    rot_rect_2_top_left = rotate(rect_2_top_left, -rect_1_angle),
+                    rot_rect_2_bottom_right = rotate(rect_2_bottom_right, -rect_1_angle);
+
+                return
+                    rot_rect_1_top_left[0] < rot_rect_2_bottom_right[0] &&
+                    rot_rect_1_bottom_right[0] > rot_rect_2_top_left[0] &&
+                    rot_rect_1_top_left[1] < rot_rect_2_bottom_right[1] &&
+                    rot_rect_1_bottom_right[1] > rot_rect_2_top_left[1];
+
+            }
+
+        } else {
+            const std::array<std::array<std::valarray<double>, 2>, 4>
+                rect_1_edges = edgesRectangle2D(rect_1_top_left, rect_1_bottom_left, rect_1_bottom_right, rect_1_top_right),
+                rect_2_edges = edgesRectangle2D(rect_2_top_left, rect_2_bottom_left, rect_2_bottom_right, rect_2_top_right);
+
+            std::valarray<double> ray_end;
+
+            for (const auto &rect_1_edge : rect_1_edges) {
+                for (const auto &rect_2_edge : rect_2_edges) {
+                    if (distanceRays(rect_1_edge[0], rect_1_edge[1], rect_2_edge[0], rect_2_edge[1], near_point, ray_end) <= EPSILON) {
+                        return true;
+                    }
                 }
             }
-        }
 
-        for (const auto &rect_2_vertex : { rect_2_top_left, rect_2_bottom_left, rect_2_bottom_right, rect_2_top_right }) {
-            if (collisionPointRectangle2D(rect_1_top_left, rect_1_bottom_left, rect_1_bottom_right, rect_1_top_right, rect_2_vertex)) {
-                near_point = rect_2_vertex;
-                return true;
+            for (const auto &rect_2_vertex : { rect_2_top_left, rect_2_bottom_left, rect_2_bottom_right, rect_2_top_right }) {
+                if (collisionPointRectangle2D(rect_1_top_left, rect_1_bottom_left, rect_1_bottom_right, rect_1_top_right, rect_2_vertex)) {
+                    near_point = rect_2_vertex;
+                    return true;
+                }
             }
         }
 
