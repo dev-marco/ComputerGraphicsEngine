@@ -29,8 +29,8 @@ namespace Engine {
             int width,
             int height,
             const char *title,
-            GLFWmonitor *monitor,
-            GLFWwindow *share
+            GLFWmonitor *monitor = nullptr,
+            GLFWwindow *share = nullptr
         ) : window(glfwCreateWindow(width, height, title, monitor, share)) {
             glfwSetCursorPosCallback(this->window, Event::Event<Event::MouseMove>::trigger);
         };
