@@ -12,18 +12,23 @@
 #include "easing.h"
 
 namespace Engine {
+
     class Window {
+
+        static std::map<GLFWwindow *, Window *> windows;
 
         GLFWwindow *window;
         Object object_root, gui_root;
         std::map<unsigned, std::tuple<std::function<bool()>, double, double, bool, bool>> timeouts;
-        unsigned tick_counter = 0, timeout_counter = 1;
-        double start_time = 0;
-        bool paused = false;
+        unsigned tick_counter = 0, timeout_counter = 1, pause_counter = 1;
+        double start_time = 0, speed = 1.0;
+        std::set<unsigned> paused;
 
         bool executeTimeout(std::map<unsigned, std::tuple<std::function<bool()>, double, double, bool, bool>>::iterator timeout);
 
     public:
+
+        inline static Window *getInstance (GLFWwindow *_window) { return Window::windows[_window]; }
 
         inline Window (
             int width,
@@ -31,9 +36,15 @@ namespace Engine {
             const char *title,
             GLFWmonitor *monitor = nullptr,
             GLFWwindow *share = nullptr
-        ) : window(glfwCreateWindow(width, height, title, monitor, share)) {
+        ) : window(glfwCreateWindow(width, height, title, monitor, share)), start_time(glfwGetTime()) {
             glfwSetCursorPosCallback(this->window, Event::Event<Event::MouseMove>::trigger);
+            glfwSetKeyCallback(this->window, Event::Event<Event::Keyboard>::trigger);
+            windows[this->window] = this;
         };
+
+        inline ~Window (void) {
+            windows.erase(this->window);
+        }
 
         void update(void);
 
@@ -91,10 +102,22 @@ namespace Engine {
             std::function<double(double, double, double, double)> easing = Easing::Linear
         );
 
-        void pause (void);
-        void unpause (void);
+        unsigned pause (void);
+        void unpause (unsigned &context);
+
+        inline unsigned togglePaused (unsigned context) {
+            if (this->isPaused()) {
+                this->unpause(context);
+            } else {
+                context = this->pause();
+            }
+            return context;
+        }
 
         inline void setShader (Shader::Program *shader) { this->object_root.setShader(shader); }
+
+        inline void setSpeed (const double _speed) { this->speed = _speed; }
+        inline double getSpeed (void) const { return this->speed; }
 
         inline void draw () const {
             Shader::Program::useShader(this->object_root.getShader()), this->object_root.draw();
@@ -106,7 +129,7 @@ namespace Engine {
         inline void swapBuffers () const { glfwSwapBuffers(this->window); }
         inline void getFramebufferSize (int &width, int &height) const { glfwGetFramebufferSize(this->window, &width, &height); }
 
-        inline bool isPaused (void) const { return this->paused; }
+        inline bool isPaused (void) const { return !this->paused.empty(); }
 
         inline GLFWwindow *get () const { return this->window; }
 

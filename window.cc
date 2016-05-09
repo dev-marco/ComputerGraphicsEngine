@@ -2,11 +2,17 @@
 
 namespace Engine {
 
+    std::map<GLFWwindow *, Window *> Window::windows;
+
     bool Window::executeTimeout (std::map<unsigned, std::tuple<std::function<bool()>, double, double, bool, bool>>::iterator timeout) {
         if (std::get<3>(timeout->second)) {
             if (!(std::get<4>(timeout->second) && this->isPaused())) {
                 if (std::get<0>(timeout->second)()) {
-                    std::get<1>(timeout->second) += std::get<2>(timeout->second);
+                    if (!(std::get<4>(timeout->second) && this->isPaused())) {
+                        std::get<1>(timeout->second) = std::get<2>(timeout->second);
+                    } else {
+                        std::get<1>(timeout->second) += std::get<2>(timeout->second);
+                    }
                     return true;
                 }
             } else {
@@ -17,30 +23,39 @@ namespace Engine {
         return false;
     }
 
-    void Window::pause (void) {
-        double now = glfwGetTime();
-        for (auto &timeout : this->timeouts) {
-            if (std::get<4>(timeout.second)) {
-                std::get<1>(timeout.second) -= now;
+    unsigned Window::pause (void) {
+        unsigned context = this->pause_counter++;
+        if (!this->isPaused()) {
+            double now = glfwGetTime();
+            for (auto &timeout : this->timeouts) {
+                if (std::get<4>(timeout.second)) {
+                    std::get<1>(timeout.second) -= now;
+                }
             }
         }
-        this->paused = true;
+        this->paused.insert(context);
+        return context;
     }
 
-    void Window::unpause (void) {
-        double now = glfwGetTime();
-        for (auto &timeout : this->timeouts) {
-            if (std::get<4>(timeout.second)) {
-                std::get<1>(timeout.second) += now;
+    void Window::unpause (unsigned &context) {
+        if (!this->paused.empty()) {
+            this->paused.erase(context);
+            context = 0;
+            if (this->paused.empty()) {
+                double now = glfwGetTime();
+                for (auto &timeout : this->timeouts) {
+                    if (std::get<4>(timeout.second)) {
+                        std::get<1>(timeout.second) += now;
+                    }
+                }
             }
         }
-        this->paused = false;
     }
 
     void Window::update (void) {
 
         static double first_time = 0;
-        double now = glfwGetTime(), delta_time = now - first_time;
+        double now = glfwGetTime(), delta_time = (now - first_time) * speed;
 
         first_time = now;
 
