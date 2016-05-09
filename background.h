@@ -16,7 +16,7 @@ namespace Engine {
             virtual void apply () const {};
     };
 
-    class BackgroundColor : virtual public Background {
+    class BackgroundColor : public Background {
 
         Color color;
 
