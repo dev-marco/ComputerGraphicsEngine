@@ -17,7 +17,7 @@ namespace Engine {
     class Object {
 
         static std::unordered_set<const Object *> invalid;
-        static std::stack<Object *> marked;
+        static std::set<Object *> marked;
 
         bool display;
         Mesh *mesh, *collider = nullptr;
@@ -31,27 +31,29 @@ namespace Engine {
 
     public:
 
-        inline static bool isValid (const Object *obj) { return Object::invalid.find(obj) == Object::invalid.end(); }
+        inline static bool isValid (const Object *obj, bool is_marked = true) {
+            return Object::invalid.find(obj) == Object::invalid.end() || (is_marked && Object::marked.count(const_cast<Object *>(obj)));
+        }
 
         inline Object (
-            const std::array<double, 3> &_position = { 0.0, 0.0, 0.0 },
+            const std::valarray<double> &_position = { 0.0, 0.0, 0.0 },
             bool _display = true,
             Mesh *_mesh = new Mesh(),
             Mesh *_collider = nullptr,
             Background *_background = new Background(),
-            const std::array<double, 3> &_speed = { 0.0, 0.0, 0.0 },
-            const std::array<double, 3> &_acceleration = { 0.0, 0.0, 0.0 }
-        ) : display(_display), mesh(_mesh), collider(_collider), background(_background), position(_position.data(), 3), speed(_speed.data(), 3), acceleration(_acceleration.data(), 3) {
+            const std::valarray<double> &_speed = { 0.0, 0.0, 0.0 },
+            const std::valarray<double> &_acceleration = { 0.0, 0.0, 0.0 }
+        ) : display(_display), mesh(_mesh), collider(_collider), background(_background), position(_position), speed(_speed), acceleration(_acceleration) {
             Object::invalid.erase(this);
         };
 
-        inline virtual ~Object () { Object::invalid.insert(this); }
+        inline virtual ~Object (void) { Object::invalid.insert(this); }
 
         inline bool detectCollision (const Object *other, const std::valarray<double> &my_speed, const std::valarray<double> &other_speed, std::valarray<double> &point) const {
             return this->getCollider()->detectCollision(other->getCollider(), this->getPosition(), my_speed, other->getPosition(), other_speed, point);
         }
 
-        inline bool collides () const { return this->collider != nullptr; }
+        inline bool collides (void) const { return this->collider != nullptr; }
 
         inline bool isMoving (void) const { return !Mesh::zero(this->getSpeed()); }
 
@@ -70,7 +72,12 @@ namespace Engine {
 
         inline Shader::Program *getShader (void) const { return this->shader; }
 
-        inline void destroy (void) { this->display = false, Object::marked.push(this); }
+        inline void destroy (void) {
+            this->display = false;
+            this->collider = nullptr;
+            this->speed = this->acceleration = { 0.0, 0.0, 0.0};
+            Object::marked.insert(this);
+        }
 
         inline void setShader (Shader::Program *program) { this->shader = program; }
 
@@ -84,6 +91,8 @@ namespace Engine {
 
         inline Mesh *getMesh (void) const { return this->mesh; }
         inline Mesh *getCollider (void) const { return this->collider; }
+
+        inline Background *getBackground (void) const { return this->background; }
 
         inline operator bool () const { return Object::isValid(this); }
 

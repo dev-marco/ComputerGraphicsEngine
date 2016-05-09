@@ -3,37 +3,37 @@
 
 namespace Engine {
 
-    std::unordered_set<const Object *> Object::invalid{ NULL };
-    std::stack<Object *> Object::marked{};
+    std::unordered_set<const Object *> Object::invalid{ nullptr };
+    std::set<Object *> Object::marked{};
 
-    void Object::delayedDestroy (void ) {
+    void Object::delayedDestroy (void) {
+
+        std::set<Object *> swapper;
 
         while (!Object::marked.empty()) {
 
-            auto obj = Object::marked.top();
+            swapper.clear();
+            Object::marked.swap(swapper);
 
-            Object::marked.pop();
+            for (auto obj : swapper) {
+                if (Object::isValid(obj, false)) {
 
-            if (Object::isValid(obj)) {
+                    obj->beforeDestroy();
 
-                obj->beforeDestroy();
+                    obj->removeParent();
 
-                obj->removeParent();
+                    for (const auto &child : obj->children) {
+                        child->destroy();
+                    }
 
-                for (const auto &child : obj->getChildren()) {
-                    child->destroy();
+                    obj->children.clear();
+
+                    Object::invalid.insert(obj);
+
+                    obj->afterDestroy();
+
+                    delete obj;
                 }
-
-                obj->children.clear();
-
-                delete obj->background;
-                delete obj->mesh;
-
-                Object::invalid.insert(obj);
-
-                obj->afterDestroy();
-
-                delete obj;
             }
         }
     }
@@ -42,12 +42,12 @@ namespace Engine {
 
         if (collision_detect) {
 
-            static std::unordered_set<Object *> moving;
+            std::list<Object *> moving;
 
             for (auto &child : this->children) {
                 if (child->isMoving()) {
                     if (child->collides()) {
-                        moving.insert(child);
+                        moving.push_back(child);
                     } else {
                         child->setPosition(child->getSpeed() * delta_time);
                     }
@@ -59,26 +59,50 @@ namespace Engine {
                 constexpr unsigned collision_samples = 4;
                 const double multiplier = delta_time / static_cast<double>(collision_samples);
                 std::valarray<double> point;
+                std::unordered_map<const Object *, std::unordered_set<const Object *>> collided;
 
                 for (unsigned i = 0; i < collision_samples; ++i) {
 
-                    static std::unordered_map<Object *, std::unordered_set<Object *>> collided;
+                    for (auto child_it = moving.begin(), child_end = moving.end(); child_it != child_end; ) {
 
-                    for (auto &child : moving) {
+                        auto &child = *child_it;
+                        bool valid = Object::isValid(child) && child->collides();
 
-                        const std::valarray<double> delta_speed(child->getSpeed() * multiplier);
+                        if (valid) {
 
-                        for (auto &other : this->children) {
-                            if (
-                                child != other &&
-                                other->collides() &&
-                                !collided[child].count(other) &&
-                                child->detectCollision(other, delta_speed, other->getSpeed() * multiplier, point)
-                            ) {
-                                child->onCollision(other, point);
-                                other->onCollision(child, point);
-                                collided[other].insert(child);
+                            const std::valarray<double> delta_speed(child->getSpeed() * multiplier);
+
+                            for (auto &other : this->children) {
+
+                                if (
+                                    child != other &&
+                                    Object::isValid(other) &&
+                                    other->collides() &&
+                                    !collided[child].count(other) &&
+                                    child->detectCollision(other, delta_speed, other->getSpeed() * multiplier, point)
+                                ) {
+                                    child->onCollision(other, point);
+
+                                    if (Object::isValid(other)) {
+                                        other->onCollision(child, point);
+                                    }
+
+                                    if (!(Object::isValid(child) && child->collides())) {
+                                        valid = false;
+                                        collided[child].clear();
+                                        break;
+                                    } else {
+                                        collided[other].insert(child);
+                                    }
+                                }
                             }
+                        }
+
+                        if (valid) {
+                            child_it++;
+                        } else {
+                            child->setPosition(child->getPosition() + child->getSpeed() * static_cast<double>(collision_samples - i) * multiplier);
+                            child_it = moving.erase(child_it);
                         }
                     }
 
@@ -112,7 +136,7 @@ namespace Engine {
             this->move(delta_time, collision_detect);
             this->speed += this->acceleration * delta_time;
 
-            for (const auto &child : this->children) {
+            for (auto &child : this->children) {
                 child->update(now, delta_time, tick, collision_detect);
             }
 
@@ -144,8 +168,6 @@ namespace Engine {
 
                 this->afterDraw(only_border);
             }
-        } else {
-            std::cout << "drawing error" << std::endl;
         }
     }
 };
