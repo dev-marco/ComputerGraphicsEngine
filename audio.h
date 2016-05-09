@@ -63,8 +63,8 @@ namespace Engine {
         class Sound {
 
             Mix_Chunk *sound = nullptr;
-            int channel = -1;
-            unsigned char volume = MIX_MAX_VOLUME;
+            int channel = -1, volume = MIX_MAX_VOLUME;
+            bool paused = false, started = false;
 
         public:
 
@@ -81,9 +81,12 @@ namespace Engine {
 
             inline void freeSound (void) { if (this->validSound()) Mix_FreeChunk(this->sound); }
             inline void freeChannel (void) { if (this->validChannel()) Audio::FreeChannel(this->channel), this->channel = -1; }
-            inline void free (void) { this->freeChannel(), this->freeSound(); }
+            inline void free (void) { this->stop(), this->freeChannel(), this->freeSound(); }
 
-            inline void setVolume (unsigned char value) { if (this->validChannel()) Mix_Volume(this->channel, this->volume); }
+            inline void setVolume (int _volume) { if (this->validChannel()) this->volume = std::min(std::max(0, _volume), MIX_MAX_VOLUME), Mix_Volume(this->channel, this->volume); }
+            inline void mute (void) { this->setVolume(0); }
+            inline void maxVolume (void) { this->setVolume(MIX_MAX_VOLUME); }
+            inline int getVolume (void) const { return this->volume; }
 
             inline void load (const std::string &file) {
                 if (!this->validChannel()) {
@@ -93,9 +96,37 @@ namespace Engine {
                 this->sound = Mix_LoadWAV(file.c_str());
             }
 
-            inline void play (const int loops = 0) const { if (this->valid()) Mix_PlayChannel(this->channel, this->sound, loops); }
-            inline void pause (void) const { if (this->validChannel()) Mix_Pause(this->channel); }
-            inline void stop (void) const { if (this->validChannel()) Mix_HaltChannel(this->channel); }
+            inline void start (const int loops = 0) {
+                if (this->valid()) {
+                    Mix_PlayChannel(this->channel, this->sound, loops);
+                }
+                this->started = true;
+                this->paused = false;
+            }
+
+            inline void play () {
+                if (!this->started || !this->paused) {
+                    this->start();
+                } else if (this->valid()) {
+                    Mix_Resume(this->channel);
+                }
+                this->paused = false;
+            }
+
+            inline void pause (void) {
+                if (this->validChannel()) {
+                    Mix_Pause(this->channel);
+                }
+                this->paused = true;
+            }
+
+            inline void stop (void) {
+                if (this->validChannel()) {
+                    Mix_HaltChannel(this->channel);
+                }
+                this->started = false;
+                this->paused = false;
+            }
 
             inline void fadeIn (const int ms, const int loops = 0) const { if (this->valid()) Mix_FadeInChannel(this->channel, this->sound, loops, ms); }
             inline void fadeOut (const int ms) { if (this->validChannel()) Mix_FadeOutChannel(this->channel, ms); }
