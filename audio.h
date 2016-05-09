@@ -29,7 +29,7 @@ namespace Engine {
         throw std::string("No more channels available");
     }
 
-    inline static void FreeChannel (const int channel) { if (channel >= 0 && channel < Audio::max_channels) Audio::next_channel.push_front(channel); }
+    inline static void FreeChannel (const int channel) { if (Audio::initialized && channel >= 0 && channel < Audio::max_channels) Audio::next_channel.push_front(channel); }
 
     public:
 
@@ -70,8 +70,6 @@ namespace Engine {
 
             inline Sound (void) {}
             inline Sound (const std::string &file) { this->getChannel(), this->load(file); }
-
-            inline ~Sound (void) { this->free(); }
 
             inline bool validSound (void) const { return this->sound != nullptr; }
             inline bool validChannel (void) const { return this->channel >= 0; }
@@ -130,6 +128,8 @@ namespace Engine {
 
             inline void fadeIn (const int ms, const int loops = 0) const { if (this->valid()) Mix_FadeInChannel(this->channel, this->sound, loops, ms); }
             inline void fadeOut (const int ms) { if (this->validChannel()) Mix_FadeOutChannel(this->channel, ms); }
+
+            inline operator bool (void) const { return this->valid(); }
         };
 
     };
