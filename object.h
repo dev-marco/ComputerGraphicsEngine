@@ -73,10 +73,11 @@ namespace Engine {
         inline Shader::Program *getShader (void) const { return this->shader; }
 
         inline void destroy (void) {
-            this->display = false;
-            this->collider = nullptr;
-            this->speed = this->acceleration = { 0.0, 0.0, 0.0};
-            Object::marked.insert(this);
+            if (Object::isValid(this)) {
+                this->display = false;
+                this->collider = nullptr;
+                Object::marked.insert(this);
+            }
         }
 
         inline void setShader (Shader::Program *program) { this->shader = program; }
