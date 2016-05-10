@@ -23,8 +23,9 @@ namespace Engine {
         return false;
     }
 
-    unsigned Window::pause (void) {
-        unsigned context = this->pause_counter++;
+    void Window::pause (unsigned &context) {
+        this->unpause(context);
+        context = this->pause_counter++;
         if (!this->isPaused()) {
             double now = glfwGetTime();
             for (auto &timeout : this->timeouts) {
@@ -34,7 +35,6 @@ namespace Engine {
             }
         }
         this->paused.insert(context);
-        return context;
     }
 
     void Window::unpause (unsigned &context) {
