@@ -45,6 +45,9 @@ namespace Engine {
 
         public:
 
+            static double getMousePosX (void) { return posx; }
+            static double getMousePosY (void) { return posy; }
+
             static std::unordered_map<GLFWwindow *, std::list<std::tuple<FunctionType, std::string, unsigned, bool>>> trigger_list;
 
             inline static void beforeEvents (GLFWwindow *window, double x, double y) {
@@ -55,6 +58,20 @@ namespace Engine {
 
             inline static void triggerEvent (GLFWwindow *window, FunctionType func, double x, double y) {
                 func(window, x, y, MouseMove::posx, MouseMove::posy);
+            }
+        };
+
+        class MouseClick : public EventBase<
+            std::function<void(GLFWwindow *, int, int, int)>,
+            int, int, int
+        > {
+
+        public:
+
+            static std::unordered_map<GLFWwindow *, std::list<std::tuple<FunctionType, std::string, unsigned, bool>>> trigger_list;
+
+            inline static void triggerEvent (GLFWwindow* window, FunctionType func, int key, int action, int mods) {
+                func(window, key, action, mods);
             }
         };
 
