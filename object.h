@@ -105,6 +105,8 @@ namespace Engine {
         virtual inline void beforeDraw (bool only_border) const {}
         virtual inline void afterDraw (bool only_border) const {}
 
+        virtual void debugInfo (std::ostream &out, const std::string shift = "") const;
+
         virtual inline std::string getType () const { return "object"; }
 
     };

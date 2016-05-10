@@ -170,4 +170,30 @@ namespace Engine {
             }
         }
     }
+
+    void Object::debugInfo (std::ostream &out, const std::string shift) const {
+        if (Object::isValid(this)) {
+            out << shift << "Type: " << this->getType() << std::endl;
+            out << shift << "Position: ";
+            for (const double &v : this->getPosition()) {
+                out << v << ' ';
+            }
+            out << std::endl;
+
+            out << shift << "Speed: ";
+            for (const double &v : this->getSpeed()) {
+                out << v << ' ';
+            }
+            if (!this->getChildren().empty()) {
+                std::string next_shift = shift + ' ';
+                out << shift << "Children:" << std::endl;
+                for (auto &child : this->getChildren()) {
+                    child->debugInfo(out, next_shift);
+                }
+            } else {
+                out << std::endl;
+            }
+            out << std::endl;
+        }
+    }
 };
