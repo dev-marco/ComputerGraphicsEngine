@@ -24,7 +24,7 @@ namespace Engine {
         Background *background;
         std::list<Object *> children;
         Object *parent = nullptr;
-        std::valarray<double> position, speed, acceleration;
+        std::valarray<double> position, orientation, speed, acceleration;
         Shader::Program *shader = nullptr;
 
         static void delayedDestroy(void);
@@ -36,14 +36,15 @@ namespace Engine {
         }
 
         inline Object (
-            const std::valarray<double> &_position = { 0.0, 0.0, 0.0 },
+            const std::valarray<double> &_position = Mesh::zero,
+            const std::valarray<double> &_orientation = Mesh::quaternionIdentity,
             bool _display = true,
             Mesh *_mesh = new Mesh(),
             Mesh *_collider = nullptr,
             Background *_background = new Background(),
-            const std::valarray<double> &_speed = { 0.0, 0.0, 0.0 },
-            const std::valarray<double> &_acceleration = { 0.0, 0.0, 0.0 }
-        ) : display(_display), mesh(_mesh), collider(_collider), background(_background), position(_position), speed(_speed), acceleration(_acceleration) {
+            const std::valarray<double> &_speed = Mesh::zero,
+            const std::valarray<double> &_acceleration = Mesh::zero
+        ) : display(_display), mesh(_mesh), collider(_collider), background(_background), position(_position), orientation(_orientation), speed(_speed), acceleration(_acceleration) {
             Object::invalid.erase(this);
         };
 
@@ -55,7 +56,7 @@ namespace Engine {
 
         inline bool collides (void) const { return this->collider != nullptr; }
 
-        inline bool isMoving (void) const { return !Mesh::zero(this->getSpeed()); }
+        inline bool isMoving (void) const { return Mesh::diff(this->getSpeed(), Mesh::zero); }
 
         inline void addChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = this, this->children.push_back(obj); } }
         inline void removeChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = nullptr, this->children.remove(obj); } }
@@ -82,11 +83,13 @@ namespace Engine {
 
         inline void setShader (Shader::Program *program) { this->shader = program; }
 
-        inline std::valarray<double> getPosition (void) const { return this->position; }
-        inline std::valarray<double> getSpeed (void) const { return this->speed; }
-        inline std::valarray<double> getAcceleration (void) const { return this->acceleration; }
+        inline const std::valarray<double> &getPosition (void) const { return this->position; }
+        inline const std::valarray<double> &getOrientation (void) const { return this->orientation; }
+        inline const std::valarray<double> &getSpeed (void) const { return this->speed; }
+        inline const std::valarray<double> &getAcceleration (void) const { return this->acceleration; }
 
         inline void setPosition (const std::valarray<double> &_position) { this->position = _position; }
+        inline void setOrientation (const std::valarray<double> &_orientation) { this->orientation = _orientation; }
         inline void setSpeed (const std::valarray<double> &_speed) { this->speed = _speed; }
         inline void setAcceleration (const std::valarray<double> &_acceleration) { this->acceleration = _acceleration; }
 

@@ -2,22 +2,12 @@
 
 namespace Engine {
 
-    std::vector<std::valarray<double>> Mesh::implicitEquation (
-        const std::valarray<double> ray_start,
-        const std::valarray<double> ray_end
-    ) {
-
-        unsigned i = 0;
-        const std::array<std::valarray<double>, 2> parametric = parametricEquation(ray_start, ray_end);
-        std::vector<std::valarray<double>> result(std::max(ray_start.size(), ray_end.size()) - 1);
-
-        for (auto &param : result) {
-            param = { -parametric[1][i + 1], parametric[1][i], parametric[1][i] * parametric[0][i + 1] - parametric[1][i + 1] * parametric[0][i] };
-            i++;
-        }
-
-        return result;
-    }
+    const std::valarray<double>
+        Mesh::quaternionIdentity = { 0.0, 0.0, 0.0, 1.0 },
+        Mesh::zero = { 0.0, 0.0, 0.0 },
+        Mesh::axisX = { 1.0, 0.0, 0.0 },
+        Mesh::axisY = { 0.0, 1.0, 0.0 },
+        Mesh::axisZ = { 0.0, 1.0, 0.0 };
 
     double Mesh::distanceRays (
         const std::valarray<double> &ray_1_start,
@@ -89,18 +79,18 @@ namespace Engine {
         const std::valarray<double> &rect_1_bottom_left,
         const std::valarray<double> &rect_1_bottom_right,
         const std::valarray<double> &rect_1_top_right,
-        const double rect_1_angle,
+        const std::valarray<double> &rect_1_orientation,
         const std::valarray<double> &rect_2_top_left,
         const std::valarray<double> &rect_2_bottom_left,
         const std::valarray<double> &rect_2_bottom_right,
         const std::valarray<double> &rect_2_top_right,
-        const double rect_2_angle,
+        const std::valarray<double> &rect_2_orientation,
         std::valarray<double> &near_point
     ) {
 
-        if (rect_1_angle == rect_2_angle) {
+        if (equal(rect_1_orientation, rect_2_orientation)) {
 
-            if (rect_1_angle == 0.0) {
+            if (equal(rect_1_orientation, quaternionIdentity)) {
 
                 return
                     rect_1_top_left[0] < rect_2_bottom_right[0] &&
@@ -111,10 +101,10 @@ namespace Engine {
             } else {
 
                 const std::valarray<double>
-                    rot_rect_1_top_left = rotate(rect_1_top_left, -rect_1_angle),
-                    rot_rect_1_bottom_right = rotate(rect_1_bottom_right, -rect_1_angle),
-                    rot_rect_2_top_left = rotate(rect_2_top_left, -rect_1_angle),
-                    rot_rect_2_bottom_right = rotate(rect_2_bottom_right, -rect_1_angle);
+                    rot_rect_1_top_left = rotate(rect_1_top_left, -rect_1_orientation),
+                    rot_rect_1_bottom_right = rotate(rect_1_bottom_right, -rect_1_orientation),
+                    rot_rect_2_top_left = rotate(rect_2_top_left, -rect_1_orientation),
+                    rot_rect_2_bottom_right = rotate(rect_2_bottom_right, -rect_1_orientation);
 
                 return
                     rot_rect_1_top_left[0] < rot_rect_2_bottom_right[0] &&

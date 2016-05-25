@@ -154,19 +154,35 @@ namespace Engine {
         if (Object::isValid(this)) {
             if (this->display) {
 
-                this->beforeDraw(only_border);
+                const std::valarray<double>
+                    translation = this->getPosition(),
+                    orientation = this->getOrientation();
+
+                glPushMatrix();
+
+                if (Mesh::diff(translation, Mesh::zero)) {
+                    glTranslated(translation[0], translation[1], translation[2]);
+                }
+
+                if (Mesh::diff(orientation, Mesh::quaternionIdentity)) {
+                    glMultMatrixd(Mesh::quat2matrix(orientation).data());
+                }
 
                 // Shader::push(this->shader);
 
-                this->mesh->draw(this->position, this->background, only_border);
+                this->beforeDraw(only_border);
+
+                this->mesh->draw(this->background, only_border);
 
                 for (const auto &child : this->children) {
                     child->draw(only_border);
                 }
 
+                this->afterDraw(only_border);
+
                 // Shader::pop();
 
-                this->afterDraw(only_border);
+                glPopMatrix();
             }
         }
     }
