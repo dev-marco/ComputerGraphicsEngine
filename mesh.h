@@ -465,7 +465,6 @@ namespace Engine {
     class Rectangle2D : public Mesh {
 
         double width, height;
-
         std::valarray<double> top_left, top_right, bottom_left, bottom_right;
 
     public:
@@ -477,13 +476,12 @@ namespace Engine {
         void updatePositions (void) {
             const std::valarray<double>
                 top_left = this->getPosition(),
-                bottom_right = { top_left[0] + this->getWidth(), top_left[1] + this->getHeight(), top_left[2] };
+                bottom_right = { top_left[0] + this->getWidth(), top_left[1] - this->getHeight(), top_left[2] };
 
             this->top_left = rotate(top_left, this->getOrientation());
             this->bottom_left = rotate({ top_left[0], bottom_right[1], top_left[2] }, this->getOrientation());
             this->bottom_right = rotate(bottom_right, this->getOrientation());
             this->top_right = rotate({ bottom_right[0], top_left[1], top_left[2] }, this->getOrientation());
-
         }
 
         inline double getWidth (void) const { return this->width; }
@@ -491,7 +489,7 @@ namespace Engine {
 
         inline void setWidth (const double _width) { this->width = _width, this->updatePositions(); }
         inline void setHeight (const double _height) { this->height = _height, this->updatePositions(); }
-        inline void setOrientation (const std::valarray<double> _orientation) { Mesh::setOrientation(_orientation), this->updatePositions(); }
+        inline void setOrientation (const std::valarray<double> &_orientation) { Mesh::setOrientation(_orientation), this->updatePositions(); }
         inline void setPosition (const std::valarray<double> &_position) { Mesh::setPosition(_position), this->updatePositions(); }
 
         inline const std::valarray<double> &getTopLeftPosition (void) const { return this->top_left; }
@@ -503,7 +501,7 @@ namespace Engine {
 
             const std::valarray<double>
                 top_left = this->getPosition(),
-                bottom_right = { top_left[0] + this->getWidth(), top_left[1] + this->getHeight(), top_left[2] };
+                bottom_right = { top_left[0] + this->getWidth(), top_left[1] - this->getHeight(), top_left[2] };
 
             if (only_border) {
                 glBegin(GL_LINE_LOOP);
@@ -586,11 +584,9 @@ namespace Engine {
             }
 
             glEnd();
-
         }
 
         inline double getRadius (void) const { return this->radius; }
-
         inline void setRadius (const double _radius) { this->radius = _radius; }
 
         Mesh *getCollisionSpace (const std::valarray<double> &speed) const {
