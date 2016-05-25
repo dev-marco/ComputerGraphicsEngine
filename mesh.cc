@@ -7,7 +7,7 @@ namespace Engine {
         Mesh::zero = { 0.0, 0.0, 0.0 },
         Mesh::axisX = { 1.0, 0.0, 0.0 },
         Mesh::axisY = { 0.0, 1.0, 0.0 },
-        Mesh::axisZ = { 0.0, 1.0, 0.0 };
+        Mesh::axisZ = { 0.0, 0.0, 1.0 };
 
     double Mesh::distanceRays (
         const std::valarray<double> &ray_1_start,
