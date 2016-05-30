@@ -166,16 +166,19 @@ namespace Engine {
         }
 
         inline static std::valarray<double> rotate (const std::valarray<double> &vec, const std::valarray<double> &quat) {
-            const std::array<double, 16> matrix = quat2matrix(quat);
-            return {
-                vec[0] * matrix[0] + vec[1] * matrix[4] + vec[2] * matrix[ 8],
-                vec[0] * matrix[1] + vec[1] * matrix[5] + vec[2] * matrix[ 9],
-                vec[0] * matrix[2] + vec[1] * matrix[6] + vec[2] * matrix[10]
-            };
+            if (diff(quat, quaternionIdentity)) {
+                const std::array<double, 16> matrix = quat2matrix(quat);
+                return {
+                    vec[0] * matrix[0] + vec[1] * matrix[4] + vec[2] * matrix[ 8],
+                    vec[0] * matrix[1] + vec[1] * matrix[5] + vec[2] * matrix[ 9],
+                    vec[0] * matrix[2] + vec[1] * matrix[6] + vec[2] * matrix[10]
+                };
+            }
+            return vec;
         }
 
         inline static std::valarray<double> rotate (const std::valarray<double> &point, const std::valarray<double> &quat, const std::valarray<double> &pivot) {
-            return quat * (point - pivot) + pivot;
+            return rotate(point - pivot, quat) + pivot;
         }
 
         inline static double areaTriangle (
@@ -366,32 +369,7 @@ namespace Engine {
 
         virtual ~Mesh () {}
 
-        void draw (const Background *background, const bool only_border = false) const {
-
-            const std::valarray<double>
-                translation = this->getPosition(),
-                orientation = this->getOrientation();
-
-            glPushMatrix();
-
-            if (diff(translation, zero)) {
-                glTranslated(translation[0], translation[1], translation[2]);
-            }
-
-            if (diff(orientation, quaternionIdentity)) {
-                glMultMatrixd(quat2matrix(orientation).data());
-            }
-
-            this->_draw(background, only_border);
-
-            if (!this->children.empty()) {
-                for (const auto &mesh : this->children) {
-                    mesh->draw(background, only_border);
-                }
-            }
-
-            glPopMatrix();
-        }
+        void draw(const Background *background, const bool only_border = false) const;
 
         inline void addChild (Mesh *child) { this->children.push_back(child); }
 
@@ -506,11 +484,12 @@ namespace Engine {
             if (only_border) {
                 glBegin(GL_LINE_LOOP);
             } else {
-                glBegin(GL_TRIANGLE_FAN);
+                glBegin(GL_QUADS);
             }
 
             background->apply();
 
+            glNormal3d(-1.0, 0.0, 0.0);
             glVertex3d(top_left[0], top_left[1], top_left[2]);
             glVertex3d(top_left[0], bottom_right[1], top_left[2]);
             glVertex3d(bottom_right[0], bottom_right[1], top_left[2]);
@@ -554,11 +533,11 @@ namespace Engine {
     class Polygon2D : public Mesh {
 
         double radius;
-        int sides;
+        unsigned sides;
 
     public:
 
-        inline Polygon2D (const std::valarray<double> &_position, double _radius, int _sides, const std::valarray<double> _orientation = quaternionIdentity) :
+        inline Polygon2D (const std::valarray<double> &_position, double _radius, unsigned _sides, const std::valarray<double> _orientation = quaternionIdentity) :
             Mesh(_position, _orientation), radius(_radius), sides(_sides) {};
 
         void _draw (const Background *background, const bool only_border) const {
@@ -571,13 +550,15 @@ namespace Engine {
             if (only_border) {
                 glBegin(GL_LINE_LOOP);
             } else {
-                glBegin(GL_TRIANGLE_FAN);
+                glBegin(GL_POLYGON);
             }
 
             background->apply();
 
-            for (int i = 0; i < this->sides; i++) {
 
+            for (unsigned i = 0; i < this->sides; i++) {
+
+                glNormal3d(-1.0, 0.0, 0.0);
                 glVertex3d(position[0] + this->getRadius() * std::cos(ang), position[1] + this->getRadius() * std::sin(ang), position[2]);
                 ang += step;
 

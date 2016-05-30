@@ -140,4 +140,31 @@ namespace Engine {
         return false;
     }
 
+    void Mesh::draw (const Background *background, const bool only_border) const {
+
+        const std::valarray<double>
+            translation = this->getPosition(),
+            orientation = this->getOrientation();
+
+        glPushMatrix();
+
+        if (diff(translation, zero)) {
+            glTranslated(translation[0], translation[1], translation[2]);
+        }
+
+        if (diff(orientation, quaternionIdentity)) {
+            glMultMatrixd(quat2matrix(orientation).data());
+        }
+
+        this->_draw(background, only_border);
+
+        if (!this->children.empty()) {
+            for (const auto &mesh : this->children) {
+                mesh->draw(background, only_border);
+            }
+        }
+
+        glPopMatrix();
+    }
+
 };
