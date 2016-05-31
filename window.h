@@ -157,27 +157,31 @@ namespace Engine {
             Shader::Program::useShader(this->object_root.getShader()), this->object_root.draw();
             Shader::Program::useShader(this->gui_root.getShader()), this->gui_root.draw();
 
-            glEnable(GL_TEXTURE_2D);
-            while (!this->textures.empty()) {
+            if (!this->textures.empty()) {
+                glEnable(GL_TEXTURE_2D);
+                
+                while (!this->textures.empty()) {
 
-                GLuint texture;
-                double width, height;
-                std::valarray<double> position;
+                    GLuint texture;
+                    double width, height;
+                    std::valarray<double> position;
 
-                std::tie(texture, width, height, position) = this->textures.front();
+                    std::tie(texture, width, height, position) = this->textures.front();
 
-                this->textures.pop();
+                    this->textures.pop();
 
-                glBindTexture(GL_TEXTURE_2D, texture);
-                glBegin(GL_QUADS);
-                glNormal3f(0.0, 0.0, 1.0);
-                    glTexCoord2f(0, 0); glVertex3f(position[0], position[1], position[2]);
-                    glTexCoord2f(0, 1); glVertex3f(position[0], position[1] + height, position[2]);
-                    glTexCoord2f(1, 1); glVertex3f(position[0] + width, position[1] + height, position[2]);
-                    glTexCoord2f(1, 0); glVertex3f(position[0] + width, position[1], position[2]);
-                glEnd();
+                    glBindTexture(GL_TEXTURE_2D, texture);
+                    glBegin(GL_QUADS);
+                    glNormal3f(0.0, 0.0, 1.0);
+                        glTexCoord2f(0, 0); glVertex3f(position[0], position[1], position[2]);
+                        glTexCoord2f(0, 1); glVertex3f(position[0], position[1] + height, position[2]);
+                        glTexCoord2f(1, 1); glVertex3f(position[0] + width, position[1] + height, position[2]);
+                        glTexCoord2f(1, 0); glVertex3f(position[0] + width, position[1], position[2]);
+                    glEnd();
+                }
+
+                glDisable(GL_TEXTURE_2D);
             }
-            glDisable(GL_TEXTURE_2D);
         }
 
         inline void close (void) { this->closed = true; }
