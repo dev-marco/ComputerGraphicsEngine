@@ -6,7 +6,9 @@
 #include <stack>
 #include <set>
 #include <map>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <functional>
 #include <GL/glew.h>
 
@@ -29,6 +31,17 @@ namespace Engine {
             };
             bool linked = false, multiple = false;
             std::function<void(Shader::Program *)> before_use, after_use;
+
+            static const std::string readFile (const std::string &file) {
+                std::string line;
+                std::stringstream src;
+                std::ifstream in(file);
+                while (std::getline(in, line)) {
+                    src << line << '\n';
+                }
+                in.close();
+                return src.str();
+            }
 
             static GLuint compile (GLuint type, const std::vector<std::string> &src) {
                 unsigned size = src.size();
@@ -71,7 +84,7 @@ namespace Engine {
                         glAttachShader(this->prog, shader);
                         return shader;
                     }
-                    throw std::string("This program does not support more than one shade of the same type. Initialize it passing true as the parameter.");
+                    throw std::string("This program does not support more than one shader of the same type. Initialize it passing true as the parameter.");
                 }
                 return GL_FALSE;
             }
@@ -146,6 +159,30 @@ namespace Engine {
 
             inline GLuint attachTesselationEvalShader (const std::vector<std::string> &src) {
                 return this->attachShader(Program::compile(GL_COMPUTE_SHADER, src), GL_TESS_EVALUATION_SHADER);
+            }
+
+            inline GLuint attachVertexShaderFile (const std::string &file) {
+                return this->attachShader(Program::compile(GL_VERTEX_SHADER, { readFile(file) }), GL_VERTEX_SHADER);
+            }
+
+            inline GLuint attachFragmentShaderFile (const std::string &file) {
+                return this->attachShader(Program::compile(GL_FRAGMENT_SHADER, { readFile(file) }), GL_FRAGMENT_SHADER);
+            }
+
+            inline GLuint attachGeometryShaderFile (const std::string &file) {
+                return this->attachShader(Program::compile(GL_GEOMETRY_SHADER, { readFile(file) }), GL_GEOMETRY_SHADER);
+            }
+
+            inline GLuint attachComputeShaderFile (const std::string &file) {
+                return this->attachShader(Program::compile(GL_COMPUTE_SHADER, { readFile(file) }), GL_COMPUTE_SHADER);
+            }
+
+            inline GLuint attachTesselationControlShaderFile (const std::string &file) {
+                return this->attachShader(Program::compile(GL_COMPUTE_SHADER, { readFile(file) }), GL_TESS_CONTROL_SHADER);
+            }
+
+            inline GLuint attachTesselationEvalShaderFile (const std::string &file) {
+                return this->attachShader(Program::compile(GL_COMPUTE_SHADER, { readFile(file) }), GL_TESS_EVALUATION_SHADER);
             }
 
             inline void detachShader (GLuint shader) {
