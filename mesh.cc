@@ -23,8 +23,8 @@ namespace Engine {
             rays_delta = ray_1_start - ray_2_start;
 
         const double
-            ray_1_size2 = norm2(ray_1_delta),
-            ray_2_size2 = norm2(ray_2_delta);
+            ray_1_size2 = length2(ray_1_delta),
+            ray_2_size2 = length2(ray_2_delta);
 
         double mua, mub;
 

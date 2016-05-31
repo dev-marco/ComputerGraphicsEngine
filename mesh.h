@@ -78,12 +78,12 @@ namespace Engine {
             };
         }
 
-        inline static double norm2 (const std::valarray<double> &vec) {
+        inline static double length2 (const std::valarray<double> &vec) {
             return dot(vec, vec);
         }
 
-        inline static double norm (const std::valarray<double> &vec) {
-            return std::sqrt(norm2(vec));
+        inline static double length (const std::valarray<double> &vec) {
+            return std::sqrt(length2(vec));
         }
 
         inline static std::valarray<double> resize (const std::valarray<double> &vec, const double vector_size, const double new_size) {
@@ -91,25 +91,25 @@ namespace Engine {
         }
 
         inline static std::valarray<double> resize (const std::valarray<double> &vec, const double new_size) {
-            return resize(vec, norm(vec), new_size);
+            return resize(vec, length(vec), new_size);
         }
 
-        inline static std::valarray<double> unit (const std::valarray<double> &vec) {
+        inline static std::valarray<double> normalize (const std::valarray<double> &vec) {
             return resize(vec, 1.0);
         }
 
         inline static double distance (const std::valarray<double> &point_1, const std::valarray<double> &point_2) {
-            return norm(point_1 - point_2);
+            return length(point_1 - point_2);
         }
 
         inline static double distance2 (const std::valarray<double> &point_1, const std::valarray<double> &point_2) {
-            return norm2(point_1 - point_2);
+            return length2(point_1 - point_2);
         }
 
         inline static std::valarray<double> axis2quat (const std::valarray<double> &axis, const double angle) {
             const double half_angle = angle * 0.5;
-            const std::valarray<double> unit_vec = unit(axis) * std::sin(half_angle);
-            return unit({
+            const std::valarray<double> unit_vec = normalize(axis) * std::sin(half_angle);
+            return normalize({
                 unit_vec[0],
                 unit_vec[1],
                 unit_vec[2],
@@ -125,13 +125,13 @@ namespace Engine {
                 return quaternionIdentity;
             } else if (dot_prod < -border) {
                 axis = cross(axisX, vec_1);
-                if (norm2(axis) < EPSILON) {
+                if (length2(axis) < EPSILON) {
                     axis = cross(axisY, vec_1);
                 }
                 return axis2quat(axis, DEG180);
             } else {
                 axis = cross(vec_1, vec_2);
-                return unit({ axis[0], axis[1], axis[2], 1 + dot_prod });
+                return normalize({ axis[0], axis[1], axis[2], 1 + dot_prod });
             }
         }
 
@@ -194,9 +194,9 @@ namespace Engine {
                 ) * 0.5);
             } else {
                 const double
-                    a2 = norm2(tri_point_2 - tri_point_1),
-                    b2 = norm2(tri_point_3 - tri_point_2),
-                    c2 = norm2(tri_point_1 - tri_point_3),
+                    a2 = length2(tri_point_2 - tri_point_1),
+                    b2 = length2(tri_point_3 - tri_point_2),
+                    c2 = length2(tri_point_1 - tri_point_3),
                     a2b2c2 = a2 + b2 - c2;
                 return std::sqrt(4.0 * a2 * b2 + a2b2c2 * a2b2c2) * 0.25;
             }
@@ -219,7 +219,7 @@ namespace Engine {
             const std::valarray<double> &rect_bottom_left,
             const std::valarray<double> &rect_bottom_right
         ) {
-            return std::sqrt(norm2(rect_bottom_left - rect_top_left) * norm2(rect_bottom_right - rect_bottom_left));
+            return std::sqrt(length2(rect_bottom_left - rect_top_left) * length2(rect_bottom_right - rect_bottom_left));
         }
 
         inline static std::array<std::array<std::valarray<double>, 2>, 4> edgesRectangle2D (
@@ -244,12 +244,12 @@ namespace Engine {
             bool infinite = false
         ) {
             const std::valarray<double> delta_ray = ray_end - ray_start;
-            const double length2 = norm2(delta_ray);
+            const double length_2 = length2(delta_ray);
 
-            if (length2 == 0.0) {
+            if (length_2 == 0.0) {
                 near_point = ray_start;
             } else {
-                double param = ((point - ray_start) * delta_ray).sum() / length2;
+                double param = ((point - ray_start) * delta_ray).sum() / length_2;
 
                 if (!infinite) {
                     param = clamp(param, 0.0, 1.0);
@@ -489,7 +489,7 @@ namespace Engine {
 
             background->apply();
 
-            glNormal3d(-1.0, 0.0, 0.0);
+            glNormal3d(0.0, 0.0, 1.0);
             glVertex3d(top_left[0], top_left[1], top_left[2]);
             glVertex3d(top_left[0], bottom_right[1], top_left[2]);
             glVertex3d(bottom_right[0], bottom_right[1], top_left[2]);
@@ -555,10 +555,10 @@ namespace Engine {
 
             background->apply();
 
+            glNormal3d(0.0, 0.0, 1.0);
 
             for (unsigned i = 0; i < this->sides; i++) {
 
-                glNormal3d(-1.0, 0.0, 0.0);
                 glVertex3d(position[0] + this->getRadius() * std::cos(ang), position[1] + this->getRadius() * std::sin(ang), position[2]);
                 ang += step;
 
@@ -572,7 +572,7 @@ namespace Engine {
 
         Mesh *getCollisionSpace (const std::valarray<double> &speed) const {
 
-            if (norm2(speed) > (this->getRadius() * this->getRadius())) {
+            if (length2(speed) > (this->getRadius() * this->getRadius())) {
                 const double speed_angle = std::atan2(speed[1], speed[0]);
 
                 const std::valarray<double>
@@ -583,7 +583,7 @@ namespace Engine {
                     },
                     top_position = this->getPosition() + difference;
 
-                return new Rectangle2D(top_position, Mesh::norm(speed), this->getRadius() * 2.0, rot2quat(unit(speed), axisX));
+                return new Rectangle2D(top_position, Mesh::length(speed), this->getRadius() * 2.0, rot2quat(normalize(speed), axisX));
             } else {
                 return nullptr;
             }
