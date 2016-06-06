@@ -4,7 +4,7 @@ namespace Engine {
 
     std::map<GLFWwindow *, Window *> Window::windows;
 
-    bool Window::executeTimeout (std::map<unsigned, std::tuple<std::function<bool()>, double, double, bool, bool>>::iterator timeout) {
+    bool Window::executeTimeout (std::map<unsigned, std::tuple<std::function<bool()>, float_max_t, float_max_t, bool, bool>>::iterator timeout) {
         if (std::get<3>(timeout->second)) {
             if (!(std::get<4>(timeout->second) && this->isPaused())) {
                 if (std::get<0>(timeout->second)()) {
@@ -27,7 +27,7 @@ namespace Engine {
         this->unpause(context);
         context = this->pause_counter++;
         if (!this->isPaused()) {
-            double now = glfwGetTime();
+            float_max_t now = glfwGetTime();
             for (auto &timeout : this->timeouts) {
                 if (std::get<4>(timeout.second)) {
                     std::get<1>(timeout.second) -= now;
@@ -42,7 +42,7 @@ namespace Engine {
             this->paused.erase(context);
             context = 0;
             if (this->paused.empty()) {
-                double now = glfwGetTime();
+                float_max_t now = glfwGetTime();
                 for (auto &timeout : this->timeouts) {
                     if (std::get<4>(timeout.second)) {
                         std::get<1>(timeout.second) += now;
@@ -54,8 +54,8 @@ namespace Engine {
 
     void Window::update (void) {
 
-        static double first_time = 0;
-        double now = glfwGetTime(), delta_time = (now - first_time) * speed;
+        static float_max_t first_time = 0;
+        float_max_t now = glfwGetTime(), delta_time = (now - first_time) * speed;
 
         first_time = now;
 
@@ -81,22 +81,22 @@ namespace Engine {
     }
 
     unsigned Window::animate (
-        const std::function<bool(double)> &func,
-        double total_time,
+        const std::function<bool(float_max_t)> &func,
+        float_max_t total_time,
         unsigned total_steps,
-        std::function<double(double, double, double, double)> easing
+        std::function<float_max_t(float_max_t, float_max_t, float_max_t, float_max_t)> easing
     ) {
 
-        double delta, start_time = glfwGetTime();
+        float_max_t delta, start_time = glfwGetTime();
 
         if (total_steps == 0) {
             total_steps = ceil(total_time / 0.01);
         }
 
-        delta = 1.0 / static_cast<double>(total_steps);
+        delta = 1.0 / static_cast<float_max_t>(total_steps);
 
         return this->setTimeout ([ delta, func, easing, start_time, total_time ] () -> bool {
-            double now = glfwGetTime();
+            float_max_t now = glfwGetTime();
             if (now < (total_time + start_time)) {
                 return func(easing(now - start_time, 0.0, 1.0, total_time));
             }

@@ -1,5 +1,4 @@
 #include "object.h"
-#include <typeinfo>
 
 namespace Engine {
 
@@ -38,7 +37,7 @@ namespace Engine {
         }
     }
 
-    void Object::move (double delta_time, bool collision_detect) {
+    void Object::move (float_max_t delta_time, bool collision_detect) {
 
         if (collision_detect) {
 
@@ -57,8 +56,8 @@ namespace Engine {
             if (!moving.empty()) {
 
                 constexpr unsigned collision_samples = 4;
-                const double multiplier = delta_time / static_cast<double>(collision_samples);
-                std::valarray<double> point;
+                const float_max_t multiplier = delta_time / static_cast<float_max_t>(collision_samples);
+                Vec<3> point;
                 std::unordered_map<const Object *, std::unordered_set<const Object *>> collided;
 
                 for (unsigned i = 0; i < collision_samples; ++i) {
@@ -70,7 +69,7 @@ namespace Engine {
 
                         if (valid) {
 
-                            const std::valarray<double> delta_speed(child->getSpeed() * multiplier);
+                            const Vec<3> delta_speed = child->getSpeed() * multiplier;
 
                             for (auto &other : this->children) {
 
@@ -101,7 +100,7 @@ namespace Engine {
                         if (valid) {
                             child_it++;
                         } else {
-                            child->setPosition(child->getPosition() + child->getSpeed() * static_cast<double>(collision_samples - i) * multiplier);
+                            child->setPosition(child->getPosition() + child->getSpeed() * static_cast<float_max_t>(collision_samples - i) * multiplier);
                             child_it = moving.erase(child_it);
                         }
                     }
@@ -122,7 +121,7 @@ namespace Engine {
         }
     }
 
-    void Object::update (double now, double delta_time, unsigned tick, bool collision_detect) {
+    void Object::update (float_max_t now, float_max_t delta_time, unsigned tick, bool collision_detect) {
 
         static bool destroy_shared = true;
         const bool destroy_local = destroy_shared;
@@ -154,19 +153,10 @@ namespace Engine {
         if (Object::isValid(this)) {
             if (this->display) {
 
-                const std::valarray<double>
-                    translation = this->getPosition(),
-                    orientation = this->getOrientation();
+                Draw::push();
 
-                glPushMatrix();
-
-                if (Mesh::diff(translation, Mesh::zero)) {
-                    glTranslated(translation[0], translation[1], translation[2]);
-                }
-
-                if (Mesh::diff(orientation, Mesh::quaternionIdentity)) {
-                    glMultMatrixd(Mesh::quat2matrix(orientation).data());
-                }
+                Draw::translate(this->getPosition());
+                Draw::rotate(this->getOrientation());
 
                 // Shader::push(this->shader);
 
@@ -182,7 +172,7 @@ namespace Engine {
 
                 // Shader::pop();
 
-                glPopMatrix();
+                Draw::pop();
             }
         }
     }
@@ -191,13 +181,13 @@ namespace Engine {
         if (Object::isValid(this)) {
             out << shift << "Type: " << this->getType() << std::endl;
             out << shift << "Position: ";
-            for (const double &v : this->getPosition()) {
+            for (const auto &v : this->getPosition()) {
                 out << v << ' ';
             }
             out << std::endl;
 
             out << shift << "Speed: ";
-            for (const double &v : this->getSpeed()) {
+            for (const auto &v : this->getSpeed()) {
                 out << v << ' ';
             }
             if (!this->getChildren().empty()) {

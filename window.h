@@ -7,10 +7,12 @@
 #include <unistd.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "defaults.h"
 #include "shader.h"
 #include "event.h"
 #include "object.h"
 #include "easing.h"
+#include "vec.h"
 #include "texturepng.h"
 
 namespace Engine {
@@ -21,14 +23,14 @@ namespace Engine {
 
         GLFWwindow *window;
         Object object_root, gui_root;
-        std::map<unsigned, std::tuple<std::function<bool()>, double, double, bool, bool>> timeouts;
+        std::map<unsigned, std::tuple<std::function<bool()>, float_max_t, float_max_t, bool, bool>> timeouts;
         unsigned tick_counter = 0, timeout_counter = 1, pause_counter = 1;
-        double start_time = 0, speed = 1.0;
+        float_max_t start_time = 0, speed = 1.0;
         std::set<unsigned> paused;
         bool closed = false;
-        std::queue<std::tuple<GLuint, double, double, std::valarray<double>>> textures;
+        std::queue<std::tuple<GLuint, float_max_t, float_max_t, Vec<3>>> textures;
 
-        bool executeTimeout(std::map<unsigned, std::tuple<std::function<bool()>, double, double, bool, bool>>::iterator timeout);
+        bool executeTimeout(std::map<unsigned, std::tuple<std::function<bool()>, float_max_t, float_max_t, bool, bool>>::iterator timeout);
 
     public:
 
@@ -53,11 +55,13 @@ namespace Engine {
             glfwDestroyWindow(this->window);
         }
 
-        void addTexture2D (const GLuint texture, const double width, const double height, const std::valarray<double> &position) {
+        // TODO change to background
+        void addTexture2D (const GLuint texture, const float_max_t width, const float_max_t height, const Vec<3> &position) {
             this->textures.push(std::forward_as_tuple(texture, width, height, position));
         }
 
-        void drawNumber (const unsigned number, const double height, std::valarray<double> position) {
+        // TODO remove
+        void drawNumber (const unsigned number, const float_max_t height, Vec<3> position) {
 
             const static GLuint textures_numbers[] = {
                 loadPNG("images/numbers/0.png"),
@@ -72,7 +76,7 @@ namespace Engine {
                 loadPNG("images/numbers/9.png")
             };
 
-            const double width = height / 2.0;
+            const float_max_t width = height / 2.0;
 
             for (const char &c : std::to_string(number)) {
                 addTexture2D(textures_numbers[c - '0'], width, height, position);
@@ -86,7 +90,7 @@ namespace Engine {
         inline void addGUI (Object *gui) { this->gui_root.addChild(gui); }
 
         inline unsigned sync (unsigned fps = 60) {
-            double frame_time = 1.0 / static_cast<double>(fps), now = glfwGetTime();
+            float_max_t frame_time = 1.0 / static_cast<float_max_t>(fps), now = glfwGetTime();
             if ((this->start_time + frame_time) > now) {
                 usleep((this->start_time + frame_time - now) * 1000000.0);
             } else {
@@ -98,7 +102,7 @@ namespace Engine {
 
         inline unsigned setTimeout (
             const std::function<bool()> &func,
-            double interval,
+            float_max_t interval,
             bool pauseable = false
         ) {
             if (interval > 0) {
@@ -130,10 +134,10 @@ namespace Engine {
         }
 
         unsigned animate (
-            const std::function<bool(double)> &func,
-            double total_time,
+            const std::function<bool(float_max_t)> &func,
+            float_max_t total_time,
             unsigned total_steps = 0,
-            std::function<double(double, double, double, double)> easing = Easing::Linear
+            std::function<float_max_t(float_max_t, float_max_t, float_max_t, float_max_t)> easing = Easing::Linear
         );
 
         void pause (unsigned &context);
@@ -150,21 +154,22 @@ namespace Engine {
 
         inline void setShader (Shader::Program *shader) { this->object_root.setShader(shader); }
 
-        inline void setSpeed (const double _speed) { this->speed = _speed; }
-        inline double getSpeed (void) const { return this->speed; }
+        inline void setSpeed (const float_max_t _speed) { this->speed = _speed; }
+        inline float_max_t getSpeed (void) const { return this->speed; }
 
         inline void draw () {
             Shader::Program::useShader(this->object_root.getShader()), this->object_root.draw();
             Shader::Program::useShader(this->gui_root.getShader()), this->gui_root.draw();
 
+            // TODO use background
             if (!this->textures.empty()) {
                 glEnable(GL_TEXTURE_2D);
-                
+
                 while (!this->textures.empty()) {
 
                     GLuint texture;
-                    double width, height;
-                    std::valarray<double> position;
+                    float_max_t width, height;
+                    Vec<3> position;
 
                     std::tie(texture, width, height, position) = this->textures.front();
 
@@ -172,7 +177,7 @@ namespace Engine {
 
                     glBindTexture(GL_TEXTURE_2D, texture);
                     glBegin(GL_QUADS);
-                    glNormal3f(0.0, 0.0, 1.0);
+                    glNormal3d(0.0, 0.0, 1.0);
                         glTexCoord2f(0, 0); glVertex3f(position[0], position[1], position[2]);
                         glTexCoord2f(0, 1); glVertex3f(position[0], position[1] + height, position[2]);
                         glTexCoord2f(1, 1); glVertex3f(position[0] + width, position[1] + height, position[2]);

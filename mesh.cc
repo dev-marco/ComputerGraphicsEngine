@@ -2,62 +2,47 @@
 
 namespace Engine {
 
-    const std::valarray<double>
-        Mesh::quaternionIdentity = { 0.0, 0.0, 0.0, 1.0 },
-        Mesh::zero = { 0.0, 0.0, 0.0 },
-        Mesh::axisX = { 1.0, 0.0, 0.0 },
-        Mesh::axisY = { 0.0, 1.0, 0.0 },
-        Mesh::axisZ = { 0.0, 0.0, 1.0 };
-
-    double Mesh::distanceRays (
-        const std::valarray<double> &ray_1_start,
-        const std::valarray<double> &ray_1_end,
-        const std::valarray<double> &ray_2_start,
-        const std::valarray<double> &ray_2_end,
-        std::valarray<double> &ray_start,
-        std::valarray<double> &ray_end
+    float_max_t Mesh::distanceRays (
+        const Vec<3> &ray_1_start,
+        const Vec<3> &ray_1_end,
+        const Vec<3> &ray_2_start,
+        const Vec<3> &ray_2_end,
+        Vec<3> &ray_start,
+        Vec<3> &ray_end
     ) {
-        const std::valarray<double>
+        const Vec<3>
             ray_1_delta = ray_1_end - ray_1_start,
             ray_2_delta = ray_2_end - ray_2_start,
             rays_delta = ray_1_start - ray_2_start;
 
-        const double
-            ray_1_size2 = length2(ray_1_delta),
-            ray_2_size2 = length2(ray_2_delta);
+        const float_max_t
+            ray_1_size2 = ray_1_delta.length2(),
+            ray_2_size2 = ray_2_delta.length2();
 
-        double mua, mub;
+        float_max_t mua = 0.0, mub = 0.0;
 
         if (ray_1_size2 <= EPSILON) {
-
-            if (ray_2_size2 <= EPSILON) {
-                mua = 0.0, mub = 0.0;
-            } else {
-                mua = 0.0;
-                mub = clamp(dot(ray_2_delta, rays_delta) / ray_2_size2, 0.0, 1.0);
+            if (ray_2_size2 > EPSILON) {
+                mub = clamp(ray_2_delta.dot(rays_delta) / ray_2_size2, 0.0, 1.0);
             }
         } else {
-            const double c = dot(ray_1_delta, rays_delta);
+            const float_max_t c = ray_1_delta.dot(rays_delta);
 
             if (ray_2_size2 <= EPSILON) {
-                mub = 0.0;
                 mua = clamp(-c / ray_1_size2, 0.0, 1.0);
             } else {
-                const double
-                    b = dot(ray_1_delta, ray_2_delta),
+                const float_max_t
+                    b = ray_1_delta.dot(ray_2_delta),
                     denom = ray_1_size2 * ray_2_size2 - b * b,
-                    f = dot(ray_2_delta, rays_delta);
+                    f = ray_2_delta.dot(rays_delta);
 
                 if (denom != 0.0) {
                     mua = clamp((b * f - c * ray_2_size2) / denom, 0.0, 1.0);
-                } else {
-                    mua = 0.0;
                 }
 
-                const double numer = b * mua + f;
+                const float_max_t numer = b * mua + f;
 
                 if (numer <= 0.0) {
-                    mub = 0.0;
                     mua = clamp(-c / ray_1_size2, 0.0, 1.0);
                 } else if (numer >= ray_2_size2) {
                     mub = 1.0;
@@ -71,26 +56,26 @@ namespace Engine {
         ray_start = ray_1_start + ray_1_delta * mua;
         ray_end = ray_2_start + ray_2_delta * mub;
 
-        return distance(ray_start, ray_end);
+        return ray_start.distance(ray_end);
     }
 
-    bool Mesh::collisionRectangles2D (
-        const std::valarray<double> &rect_1_top_left,
-        const std::valarray<double> &rect_1_bottom_left,
-        const std::valarray<double> &rect_1_bottom_right,
-        const std::valarray<double> &rect_1_top_right,
-        const std::valarray<double> &rect_1_orientation,
-        const std::valarray<double> &rect_2_top_left,
-        const std::valarray<double> &rect_2_bottom_left,
-        const std::valarray<double> &rect_2_bottom_right,
-        const std::valarray<double> &rect_2_top_right,
-        const std::valarray<double> &rect_2_orientation,
-        std::valarray<double> &near_point
+    bool Mesh::collisionRectangles (
+        const Vec<3> &rect_1_top_left,
+        const Vec<3> &rect_1_bottom_left,
+        const Vec<3> &rect_1_bottom_right,
+        const Vec<3> &rect_1_top_right,
+        const Quaternion &rect_1_orientation,
+        const Vec<3> &rect_2_top_left,
+        const Vec<3> &rect_2_bottom_left,
+        const Vec<3> &rect_2_bottom_right,
+        const Vec<3> &rect_2_top_right,
+        const Quaternion &rect_2_orientation,
+        Vec<3> &near_point
     ) {
 
-        if (equal(rect_1_orientation, rect_2_orientation)) {
+        if (rect_1_orientation == rect_2_orientation) {
 
-            if (equal(rect_1_orientation, quaternionIdentity)) {
+            if (rect_1_orientation.isIdentity()) {
 
                 return
                     rect_1_top_left[0] < rect_2_bottom_right[0] &&
@@ -100,11 +85,13 @@ namespace Engine {
 
             } else {
 
-                const std::valarray<double>
-                    rot_rect_1_top_left = rotate(rect_1_top_left, -rect_1_orientation),
-                    rot_rect_1_bottom_right = rotate(rect_1_bottom_right, -rect_1_orientation),
-                    rot_rect_2_top_left = rotate(rect_2_top_left, -rect_1_orientation),
-                    rot_rect_2_bottom_right = rotate(rect_2_bottom_right, -rect_1_orientation);
+                const Quaternion inv_orientation = -rect_1_orientation;
+
+                const Vec<3>
+                    rot_rect_1_top_left = inv_orientation.rotated(rect_1_top_left),
+                    rot_rect_1_bottom_right = inv_orientation.rotated(rect_1_bottom_right),
+                    rot_rect_2_top_left = inv_orientation.rotated(rect_2_top_left),
+                    rot_rect_2_bottom_right = inv_orientation.rotated(rect_2_bottom_right);
 
                 return
                     rot_rect_1_top_left[0] < rot_rect_2_bottom_right[0] &&
@@ -115,15 +102,15 @@ namespace Engine {
             }
 
         } else {
-            const std::array<std::array<std::valarray<double>, 2>, 4>
-                rect_1_edges = edgesRectangle2D(rect_1_top_left, rect_1_bottom_left, rect_1_bottom_right, rect_1_top_right),
-                rect_2_edges = edgesRectangle2D(rect_2_top_left, rect_2_bottom_left, rect_2_bottom_right, rect_2_top_right);
+            const std::array<std::array<Vec<3>, 2>, 4>
+                rect_1_edges = edgesRectangle(rect_1_top_left, rect_1_bottom_left, rect_1_bottom_right, rect_1_top_right),
+                rect_2_edges = edgesRectangle(rect_2_top_left, rect_2_bottom_left, rect_2_bottom_right, rect_2_top_right);
 
-            std::valarray<double> ray_end;
+            Vec<3> ray_end;
 
-            for (const auto &rect_1_edge : rect_1_edges) {
-                for (const auto &rect_2_edge : rect_2_edges) {
-                    if (distanceRays(rect_1_edge[0], rect_1_edge[1], rect_2_edge[0], rect_2_edge[1], near_point, ray_end) <= EPSILON) {
+            for (unsigned i = 0; i < rect_1_edges.size(); ++i) {
+                for (unsigned j = 0; j < rect_2_edges.size(); ++j) {
+                    if (distanceRays(rect_1_edges[i][0], rect_1_edges[i][1], rect_2_edges[j][0], rect_2_edges[j][1], near_point, ray_end) <= EPSILON) {
                         return true;
                     }
                 }
@@ -142,19 +129,10 @@ namespace Engine {
 
     void Mesh::draw (const Background *background, const bool only_border) const {
 
-        const std::valarray<double>
-            translation = this->getPosition(),
-            orientation = this->getOrientation();
+        Draw::push();
 
-        glPushMatrix();
-
-        if (diff(translation, zero)) {
-            glTranslated(translation[0], translation[1], translation[2]);
-        }
-
-        if (diff(orientation, quaternionIdentity)) {
-            glMultMatrixd(quat2matrix(orientation).data());
-        }
+        Draw::translate(this->getPosition());
+        Draw::rotate(this->getOrientation());
 
         this->_draw(background, only_border);
 
@@ -164,7 +142,7 @@ namespace Engine {
             }
         }
 
-        glPopMatrix();
+        Draw::pop();
     }
 
 };
