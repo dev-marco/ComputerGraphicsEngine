@@ -14,6 +14,7 @@
 #include <iterator>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "defaults.h"
 
 namespace Engine {
 
@@ -37,16 +38,16 @@ namespace Engine {
         };
 
         class MouseMove : public EventBase<
-            std::function<void(GLFWwindow *, double, double, double, double)>,
+            std::function<void(GLFWwindow *, double, double, float_max_t, float_max_t)>,
             double, double
         > {
 
-        static double posx, posy;
+        static float_max_t posx, posy;
 
         public:
 
-            static double getMousePosX (void) { return posx; }
-            static double getMousePosY (void) { return posy; }
+            static float_max_t getMousePosX (void) { return posx; }
+            static float_max_t getMousePosY (void) { return posy; }
 
             static std::unordered_map<GLFWwindow *, std::list<std::tuple<FunctionType, std::string, unsigned, bool>>> trigger_list;
 

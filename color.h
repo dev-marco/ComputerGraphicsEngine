@@ -3,19 +3,20 @@
 
 #include <string>
 #include <GLFW/glfw3.h>
+#include "defaults.h"
 
 namespace Engine {
 
     class Color {
 
-        double r, g, b, a;
+        float_max_t r, g, b, a;
 
     public:
 
-        inline Color (double _r, double _g, double _b, double _a = 1.0) :
+        inline Color (float_max_t _r, float_max_t _g, float_max_t _b, float_max_t _a = 1.0) :
             r(_r), g(_g), b(_b), a(_a) {};
 
-        inline static Color rgba (unsigned char _r, unsigned char _g, unsigned char _b, double _a) {
+        inline static Color rgba (unsigned char _r, unsigned char _g, unsigned char _b, float_max_t _a) {
             return Color(_r / 255.0, _g / 255.0, _b / 255.0, _a);
         }
 
@@ -28,7 +29,7 @@ namespace Engine {
         }
 
         inline static Color rgba (unsigned value) {
-            return rgba((value >> 16) & 255, (value >> 8) & 255, value & 255, static_cast<double>((value >> 24) & 255) / 255.0);
+            return rgba((value >> 16) & 255, (value >> 8) & 255, value & 255, static_cast<float_max_t>((value >> 24) & 255) / 255.0);
         }
 
         inline static Color hex (std::string str) {
@@ -41,7 +42,7 @@ namespace Engine {
         inline void setR (unsigned char _r) { this->r = _r; }
         inline void setG (unsigned char _g) { this->g = _g; }
         inline void setB (unsigned char _b) { this->b = _b; }
-        inline void setA (double _a) { this->a = _a; }
+        inline void setA (float_max_t _a) { this->a = _a; }
 
         inline void apply (void) const { glColor4d(this->r, this->g, this->b, this->a); }
 

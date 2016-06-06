@@ -4,6 +4,7 @@
 #include <memory>
 #include <iostream>
 #include <GLFW/glfw3.h>
+#include "defaults.h"
 #include "color.h"
 
 namespace Engine {
@@ -29,7 +30,7 @@ namespace Engine {
         inline void setR (unsigned char _r) { this->color.setR(_r); }
         inline void setG (unsigned char _g) { this->color.setR(_g); }
         inline void setB (unsigned char _b) { this->color.setR(_b); }
-        inline void setA (double _a) { this->color.setA(_a); }
+        inline void setA (float_max_t _a) { this->color.setA(_a); }
 
         inline void apply (void) const { this->color.apply(); }
     };

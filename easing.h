@@ -2,33 +2,32 @@
 #define SRC_ENGINE_EASING_H_
 
 #include <cmath>
+#include "defaults.h"
 
 namespace Engine {
     namespace Easing {
 
-     	constexpr long double PI = 3.141592653589793238462643383279502884L;
-
-    	inline double Linear (double t, double b, double c, double d) {
+    	inline float_max_t Linear (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
     		return c * (t / d) + b;
     	}
 
     	namespace Quad {
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= d;
 
     			return b + (c * t * t);
     		}
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= d;
 
     			return b - (c * t * (t - 2.0));
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= (d * 0.5);
     			c *= 0.5;
@@ -45,21 +44,21 @@ namespace Engine {
 
     	namespace Cubic {
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= d;
 
     			return b + (c * t * t * t);
     		}
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t = (t / d) - 1.0;
 
     			return b + (c * ((t * t * t) + 1.0));
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= (d * 0.5);
     			c *= 0.5;
@@ -76,7 +75,7 @@ namespace Engine {
 
     	namespace Quart {
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= d;
     			t *= t;
@@ -84,7 +83,7 @@ namespace Engine {
     			return b + (c * t * t);
     		}
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t = (t / d) - 1.0;
     			t *= t;
@@ -92,7 +91,7 @@ namespace Engine {
     			return b - (c * ((t * t) - 1.0));
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= (d * 0.5);
     			c *= 0.5;
@@ -111,9 +110,9 @@ namespace Engine {
 
     	namespace Quint {
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
-    			double tt;
+    			float_max_t tt;
 
     			t /= d;
     			tt = t * t;
@@ -121,9 +120,9 @@ namespace Engine {
     			return b + (c * tt * tt * t);
     		}
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
-    			double tt;
+    			float_max_t tt;
 
     			t = (t / d) - 1.0;
     			tt = t * t;
@@ -131,9 +130,9 @@ namespace Engine {
     			return b + (c * ((tt * tt * t) + 1.0));
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
-    			double tt;
+    			float_max_t tt;
 
     			t /= (d * 0.5);
     			c *= 0.5;
@@ -152,15 +151,15 @@ namespace Engine {
 
     	namespace Sine {
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
     			return b + c - (c * std::cos((t / d) * (PI / 2.0)));
     		}
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
     			return b + (c * std::sin((t / d) * (PI / 2.0)));
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			c *= 0.5;
 
@@ -170,7 +169,7 @@ namespace Engine {
 
     	namespace Expo {
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			if (t == 0.0) {
     				return b;
@@ -179,7 +178,7 @@ namespace Engine {
     			return b + (c * std::pow(2.0, 10.0 * ((t / d) - 1.0)));
     		}
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			if (t == d) {
     				return b + c;
@@ -188,7 +187,7 @@ namespace Engine {
     			return b + (c * (1.0 - std::pow(2.0, -10.0 * (t / d))));
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			if (t == 0.0) {
     				return b;
@@ -213,21 +212,21 @@ namespace Engine {
 
     	namespace Circ {
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= d;
 
     			return b - (c * (sqrt(1.0 - (t * t)) - 1.0));
     		}
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t = (t / d) - 1.0;
 
     			return b + (c * sqrt(1.0 - (t * t)));
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= (d * 0.5);
     			c *= 0.5;
@@ -244,9 +243,9 @@ namespace Engine {
 
     	namespace Elastic {
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
-    			double s, p;
+    			float_max_t s, p;
 
     			if (t == 0.0) {
     				return b;
@@ -266,9 +265,9 @@ namespace Engine {
     			return b - (c * std::pow(2.0, 10.0 * t) * std::sin((((t * d) - s) * (2.0 * PI)) / p));
     		}
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
-    			double s, p;
+    			float_max_t s, p;
 
     			if (t == 0.0) {
     				return b;
@@ -286,9 +285,9 @@ namespace Engine {
     			return b + c + (c * std::pow(2.0, -10.0 * t) * std::sin(((t * d) - s) * ((2.0 * PI) / p)));
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
-    			double s, p, a = c;
+    			float_max_t s, p, a = c;
 
     			if (t == 0.0) {
     				return b;
@@ -315,21 +314,21 @@ namespace Engine {
 
     	namespace Back {
 
-    		inline double In (double t, double b, double c, double d, double s = 1.70158) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d, float_max_t s = 1.70158) {
 
     			t /= d;
 
     			return b + (c * t * t * (((s + 1.0) * t) - s));
     		}
 
-    		inline double Out (double t, double b, double c, double d, double s = 1.70158) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d, float_max_t s = 1.70158) {
 
     			t = (t / d) - 1.0;
 
     			return b + (c * (t * t * (((s + 1.0) * t) + s) + 1.0));
     		}
 
-    		inline double InOut (double t, double b, double c, double d, double s = 1.70158) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d, float_max_t s = 1.70158) {
 
     			t /= (d * 0.5);
     			c *= 0.5;
@@ -347,7 +346,7 @@ namespace Engine {
 
     	namespace Bounce {
 
-    		inline double Out (double t, double b, double c, double d) {
+    		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			t /= d;
 
@@ -371,11 +370,11 @@ namespace Engine {
     			return b + (c * ((7.5625 * t * t) + 0.984375));
     		}
 
-    		inline double In (double t, double b, double c, double d) {
+    		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
     			return b + c - Out(d - t, 0.0, c, d);
     		}
 
-    		inline double InOut (double t, double b, double c, double d) {
+    		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			if (t < (d * 0.5)) {
     				return b + (0.5 * In(t * 2.0, 0.0, c, d));
