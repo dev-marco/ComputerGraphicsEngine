@@ -6,6 +6,8 @@
 #include <array>
 #include <vector>
 #include <iterator>
+#include <algorithm>
+#include <functional>
 #include <type_traits>
 #include <iostream>
 #include <cmath>
@@ -91,6 +93,19 @@ namespace Engine {
 
         inline constexpr Vec (void) {}
 
+        template <typename ITERATOR, typename = typename std::enable_if<
+            std::is_trivially_constructible<TYPE, typename std::iterator_traits<ITERATOR>::value_type>::value,
+            ITERATOR
+        >::type>
+        inline constexpr Vec (ITERATOR it_copy, ITERATOR end_copy, TYPE fill = static_cast<TYPE>(0)) {
+            auto it_store = std::begin(this->store), end_store = std::end(this->store);
+            while (it_store != end_store && it_copy != end_copy) {
+                *it_store = *it_copy;
+                ++it_store, ++it_copy;
+            }
+            std::fill(it_store, end_store, fill);
+        }
+
         template <
             typename TYPE_C,
             typename = typename std::enable_if<std::is_trivially_constructible<TYPE, TYPE_C>::value, TYPE_C>::type
@@ -101,17 +116,11 @@ namespace Engine {
             typename INIT,
             typename = typename INIT::iterator
         >
-        inline constexpr Vec (const INIT &_copy, TYPE fill = static_cast<TYPE>(0)) {
-            auto it_data = std::begin(this->store), end_data = std::end(this->store);
-            auto it_copy = std::begin(_copy), end_copy = std::end(_copy);
-            while (it_data != end_data && it_copy != end_copy) {
-                *it_data = *it_copy;
-                ++it_data, ++it_copy;
-            }
-            std::fill(it_data, end_data, fill);
-        }
+        inline constexpr Vec (const INIT &_copy, TYPE fill = static_cast<TYPE>(0)) :
+            Vec<SIZE, TYPE>(std::begin(_copy), std::end(_copy), fill) {}
 
-        inline constexpr Vec (const std::initializer_list<TYPE> &_copy) : Vec<SIZE, TYPE>(std::vector<TYPE>(_copy)) {}
+        inline constexpr Vec (const std::initializer_list<TYPE> &_copy, TYPE fill = static_cast<TYPE>(0)) :
+            Vec<SIZE, TYPE>(std::begin(_copy), std::end(_copy), fill) {}
 
 // -----------------------------------------------------------------------------
 
@@ -200,6 +209,51 @@ namespace Engine {
         template <typename RANGE>
         inline constexpr typename std::enable_if<Filter::is_range<RANGE>::value, Vec<RANGE::size, TYPE>>::type range (void) const {
             return this->range<Filter::Ranges<RANGE>>();
+        }
+
+// -----------------------------------------------------------------------------
+
+        Vec<SIZE, TYPE> mapped (const std::function<TYPE(const TYPE &)> &func) const {
+            Vec<SIZE, TYPE> result;
+            for (uint i = 0; i < SIZE; ++i) {
+                result.data[i] = func(this->data[i]);
+            }
+            return result;
+        }
+
+        template <typename ITERATOR, typename IT_TYPE = typename std::enable_if<
+            std::is_trivially_constructible<TYPE, typename std::iterator_traits<ITERATOR>::value_type>::value,
+            ITERATOR
+        >::type>
+        Vec<SIZE, TYPE> mapped (const std::function<TYPE(const TYPE &, IT_TYPE &)> &func, ITERATOR it_apply, const ITERATOR &end_apply) const {
+            Vec<SIZE, TYPE> result;
+            auto it_store = std::begin(this->store), end_store = std::end(this->store);
+            iterator it_result = std::begin(result);
+            while (it_store != end_store && it_apply != end_apply) {
+                *it_result = func(*it_store, *it_apply);
+                ++it_store, ++it_apply, ++it_result;
+            }
+            std::copy(it_store, end_store, it_result);
+        }
+
+        Vec<SIZE, TYPE> &map (const std::function<void(TYPE &)> &func) {
+            for (uint i = 0; i < SIZE; ++i) {
+                func(this->data[i]);
+            }
+            return *this;
+        }
+
+        template <typename ITERATOR, typename IT_TYPE = typename std::enable_if<
+            std::is_trivially_constructible<TYPE, typename std::iterator_traits<ITERATOR>::value_type>::value,
+            ITERATOR
+        >::type>
+        Vec<SIZE, TYPE> &map (const std::function<void(TYPE &, IT_TYPE &)> &func, ITERATOR it_apply, const ITERATOR &end_apply) {
+            auto it_store = std::begin(this->store), end_store = std::end(this->store);
+            while (it_store != end_store && it_apply != end_apply) {
+                func(*it_store, *it_apply);
+                ++it_store, ++it_apply;
+            }
+            return *this;
         }
 
 // -----------------------------------------------------------------------------
