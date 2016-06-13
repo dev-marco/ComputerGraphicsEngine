@@ -10,9 +10,47 @@
 #include <functional>
 #include <type_traits>
 #include <iostream>
+#include <chrono>
+#include <random>
 #include <cmath>
 #include "defaults.h"
 #include "type_traits.h"
+
+#define ENGINE_VEC_TEMPLATE_IS_ITERATOR(TYPE) \
+template < \
+    typename ITERATOR, \
+    typename = typename std::enable_if< \
+        std::is_trivially_constructible< \
+            TYPE, \
+            typename std::iterator_traits<ITERATOR>::value_type \
+        >::value, \
+        ITERATOR \
+    >::type \
+>
+
+#define ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE) \
+template < \
+    typename ITERATIVE, \
+    typename = typename std::enable_if< \
+        std::is_trivially_constructible< \
+            TYPE, \
+            typename std::iterator_traits<typename ITERATIVE::iterator>::value_type \
+        >::value, \
+        typename ITERATIVE::iterator \
+    >::type \
+>
+
+#define ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE) \
+template < \
+    typename CONSTRUCTIBLE, \
+    typename = typename std::enable_if< \
+        std::is_trivially_constructible< \
+            TYPE, \
+            CONSTRUCTIBLE \
+        >::value, \
+        CONSTRUCTIBLE \
+    >::type \
+>
 
 namespace Engine {
 
@@ -65,6 +103,19 @@ namespace Engine {
 
         static_assert(SIZE > 0, "Vec size should be bigger than zero.");
 
+        inline static const TYPE _add_out (const TYPE &a, const TYPE &b) { return a + b; }
+        inline static TYPE &_add_in (TYPE &a, const TYPE &b) { return a += b; }
+
+        inline static const TYPE _sub_out (const TYPE &a, const TYPE &b) { return a - b; }
+        inline static TYPE &_sub_in (TYPE &a, const TYPE &b) { return a -= b; }
+
+        inline static const TYPE _mul_out (const TYPE &a, const TYPE &b) { return a * b; }
+        inline static TYPE &_mul_in (TYPE &a, const TYPE &b) { return a *= b; }
+
+        inline static const TYPE _div_out (const TYPE &a, const TYPE &b) { return a / b; }
+        inline static TYPE &_div_in (TYPE &a, const TYPE &b) { return a /= b; }
+
+
     protected:
 
         std::array<TYPE, SIZE> store;
@@ -74,14 +125,18 @@ namespace Engine {
         typedef typename std::array<TYPE, SIZE>::iterator iterator;
         typedef typename std::array<TYPE, SIZE>::const_iterator const_iterator;
 
-        inline static constexpr Vec<SIZE, TYPE> axis (unsigned position) {
-            std::array<Vec<SIZE, TYPE>, SIZE> axes;
-            Vec<SIZE, TYPE> zero;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                zero.store[i] = static_cast<TYPE>(0);
-                for (unsigned j = 0; j < SIZE; ++j) {
-                    axes[i].store[j] = static_cast<TYPE>(i == j);
+        inline static const Vec<SIZE, TYPE> &axis (unsigned position) {
+            static std::array<Vec<SIZE, TYPE>, SIZE> axes;
+            static bool initialized = false;
+            static Vec<SIZE, TYPE> zero;
+            if (!initialized) {
+                for (unsigned i = 0; i < SIZE; ++i) {
+                    zero.store[i] = static_cast<TYPE>(0);
+                    for (unsigned j = 0; j < SIZE; ++j) {
+                        axes[i].store[j] = static_cast<TYPE>(i == j);
+                    }
                 }
+                initialized = true;
             }
             if (position < SIZE) {
                 return axes[position];
@@ -89,15 +144,25 @@ namespace Engine {
             return zero;
         }
 
-        static const Vec<SIZE, TYPE> axisX, axisY, axisZ, axisW, zero;
+        inline static Vec<SIZE, TYPE> random (TYPE min_val = static_cast<TYPE>(0), TYPE max_val = static_cast<TYPE>(1)) {
 
-        inline constexpr Vec (void) {}
+            static std::mt19937 gen(std::chrono::system_clock::now().time_since_epoch().count());
+            std::uniform_real_distribution<TYPE> value(min_val, max_val);
+            Vec<SIZE, TYPE> result;
 
-        template <typename ITERATOR, typename = typename std::enable_if<
-            std::is_trivially_constructible<TYPE, typename std::iterator_traits<ITERATOR>::value_type>::value,
-            ITERATOR
-        >::type>
-        inline constexpr Vec (ITERATOR it_copy, ITERATOR end_copy, TYPE fill = static_cast<TYPE>(0)) {
+            for (unsigned i = 0; i < SIZE; ++i) {
+                result.store[i] = value(gen);
+            }
+
+            return result;
+        }
+
+        static const Vec<SIZE, TYPE> axisX, axisY, axisZ, axisW, zero, origin;
+
+        inline Vec (void) {}
+
+        ENGINE_VEC_TEMPLATE_IS_ITERATOR(TYPE)
+        inline Vec (ITERATOR it_copy, ITERATOR end_copy, TYPE fill = static_cast<TYPE>(0)) {
             auto it_store = std::begin(this->store), end_store = std::end(this->store);
             while (it_store != end_store && it_copy != end_copy) {
                 *it_store = *it_copy;
@@ -106,21 +171,34 @@ namespace Engine {
             std::fill(it_store, end_store, fill);
         }
 
-        template <
-            typename TYPE_C,
-            typename = typename std::enable_if<std::is_trivially_constructible<TYPE, TYPE_C>::value, TYPE_C>::type
-        >
-        inline constexpr Vec (const TYPE_C &fill) { std::fill(std::begin(this->store), std::end(this->store), static_cast<TYPE>(fill)); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        inline Vec (const CONSTRUCTIBLE &fill) { std::fill(std::begin(this->store), std::end(this->store), static_cast<TYPE>(fill)); }
 
-        template <
-            typename INIT,
-            typename = typename INIT::iterator
-        >
-        inline constexpr Vec (const INIT &_copy, TYPE fill = static_cast<TYPE>(0)) :
+        ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
+        inline Vec (const ITERATIVE &_copy, TYPE fill = static_cast<TYPE>(0)) :
             Vec<SIZE, TYPE>(std::begin(_copy), std::end(_copy), fill) {}
 
-        inline constexpr Vec (const std::initializer_list<TYPE> &_copy, TYPE fill = static_cast<TYPE>(0)) :
+        inline Vec (const Vec<SIZE, TYPE> &_copy, TYPE fill = static_cast<TYPE>(0)) :
             Vec<SIZE, TYPE>(std::begin(_copy), std::end(_copy), fill) {}
+
+        inline Vec (const std::initializer_list<TYPE> &_copy, TYPE fill = static_cast<TYPE>(0)) :
+            Vec<SIZE, TYPE>(std::begin(_copy), std::end(_copy), fill) {}
+
+// -------------------------------------
+
+        inline constexpr Vec<SIZE, TYPE> &operator = (Vec<SIZE, TYPE> &&other) { return this->swap(other); }
+
+        inline constexpr Vec<SIZE, TYPE> &operator = (const Vec<SIZE, TYPE> &other) {
+            this->store = other.store;
+            return *this;
+        }
+
+// -----------------------------------------------------------------------------
+
+        inline constexpr Vec<SIZE, TYPE> &swap (Vec<SIZE, TYPE> &other) {
+            this->store.swap(other.store);
+            return *this;
+        }
 
 // -----------------------------------------------------------------------------
 
@@ -140,7 +218,7 @@ namespace Engine {
 // -------------------------------------
 
         inline constexpr unsigned size (void) const { return SIZE; }
-        inline const std::array<TYPE, SIZE> &data (void) const { return this->store; }
+        inline const TYPE *data (void) const { return this->store.data(); }
 
 // -------------------------------------
 
@@ -186,11 +264,12 @@ namespace Engine {
 
 // -------------------------------------
 
-        inline constexpr Vec<SIZE, TYPE> &operator - (void) {
-            for (TYPE &value : this->store) {
-                value = -value;
+        inline constexpr Vec<SIZE, TYPE> operator - (void) const {
+            Vec<SIZE, TYPE> result;
+            for (unsigned i = 0; i < SIZE; ++i) {
+                result.store[i] = -this->store[i];
             }
-            return *this;
+            return result;
         }
 
 // -----------------------------------------------------------------------------
@@ -215,17 +294,14 @@ namespace Engine {
 
         Vec<SIZE, TYPE> mapped (const std::function<TYPE(const TYPE &)> &func) const {
             Vec<SIZE, TYPE> result;
-            for (uint i = 0; i < SIZE; ++i) {
-                result.data[i] = func(this->data[i]);
+            for (unsigned i = 0; i < SIZE; ++i) {
+                result.store[i] = func(this->store[i]);
             }
             return result;
         }
 
-        template <typename ITERATOR, typename IT_TYPE = typename std::enable_if<
-            std::is_trivially_constructible<TYPE, typename std::iterator_traits<ITERATOR>::value_type>::value,
-            ITERATOR
-        >::type>
-        Vec<SIZE, TYPE> mapped (const std::function<TYPE(const TYPE &, IT_TYPE &)> &func, ITERATOR it_apply, const ITERATOR &end_apply) const {
+        ENGINE_VEC_TEMPLATE_IS_ITERATOR(TYPE)
+        Vec<SIZE, TYPE> mapped (const std::function<TYPE(const TYPE &, typename std::iterator_traits<ITERATOR>::reference)> &func, ITERATOR it_apply, const ITERATOR &end_apply) const {
             Vec<SIZE, TYPE> result;
             auto it_store = std::begin(this->store), end_store = std::end(this->store);
             iterator it_result = std::begin(result);
@@ -234,20 +310,18 @@ namespace Engine {
                 ++it_store, ++it_apply, ++it_result;
             }
             std::copy(it_store, end_store, it_result);
+            return result;
         }
 
         Vec<SIZE, TYPE> &map (const std::function<void(TYPE &)> &func) {
-            for (uint i = 0; i < SIZE; ++i) {
-                func(this->data[i]);
+            for (unsigned i = 0; i < SIZE; ++i) {
+                func(this->store[i]);
             }
             return *this;
         }
 
-        template <typename ITERATOR, typename IT_TYPE = typename std::enable_if<
-            std::is_trivially_constructible<TYPE, typename std::iterator_traits<ITERATOR>::value_type>::value,
-            ITERATOR
-        >::type>
-        Vec<SIZE, TYPE> &map (const std::function<void(TYPE &, IT_TYPE &)> &func, ITERATOR it_apply, const ITERATOR &end_apply) {
+        ENGINE_VEC_TEMPLATE_IS_ITERATOR(TYPE)
+        Vec<SIZE, TYPE> &map (const std::function<void(TYPE &, typename std::iterator_traits<ITERATOR>::reference)> &func, ITERATOR it_apply, const ITERATOR &end_apply) {
             auto it_store = std::begin(this->store), end_store = std::end(this->store);
             while (it_store != end_store && it_apply != end_apply) {
                 func(*it_store, *it_apply);
@@ -343,7 +417,7 @@ namespace Engine {
 
         inline Vec<SIZE, TYPE> &resize (const TYPE to_size) {
             if (this->length2() != (to_size * to_size)) {
-                *this /= to_size / this->length();
+                *this *= to_size / this->length();
             }
             return *this;
         }
@@ -351,16 +425,22 @@ namespace Engine {
 // -------------------------------------
 
         inline Vec<SIZE, TYPE> normalized (void) const {
-            TYPE one = static_cast<TYPE>(1);
-            if (this->length2() != one) {
+            TYPE
+                zero = static_cast<TYPE>(0),
+                one = static_cast<TYPE>(1),
+                length2 = this->length2();
+            if (length2 != zero && length2 != one) {
                 return this->resized(one);
             }
             return *this;
         }
 
         inline Vec<SIZE, TYPE> &normalize (void) {
-            TYPE one = static_cast<TYPE>(1);
-            if (this->length2() != one) {
+            TYPE
+                zero = static_cast<TYPE>(0),
+                one = static_cast<TYPE>(1),
+                length2 = this->length2();
+            if (length2 != zero && length2 != one) {
                 this->resize(one);
             }
             return *this;
@@ -385,113 +465,61 @@ namespace Engine {
 
 // -------------------------------------
 
-        inline constexpr Vec<SIZE, TYPE> translated (const Vec<SIZE, TYPE> &other) const {
-            return (*this) + other;
+        inline Vec<SIZE, TYPE> clamped (const TYPE &min, const TYPE &max) const {
+            const TYPE length2 = this->length2();
+            if (length2 < (min * min)) {
+                return this->resized(min);
+            } else if (length2 > (max * max)) {
+                return this->resized(max);
+            }
+            return *this;
         }
 
-        inline constexpr Vec<SIZE, TYPE> &translate (const Vec<SIZE, TYPE> &other) {
-            this += other;
+        inline Vec<SIZE, TYPE> &clamp (const TYPE &min, const TYPE &max) {
+            const TYPE length2 = this->length2();
+            if (length2 < (min * min)) {
+                return this->resize(min);
+            } else if (length2 > (max * max)) {
+                return this->resize(max);
+            }
             return *this;
         }
 
 // -----------------------------------------------------------------------------
 
-        constexpr Vec<SIZE, TYPE> operator + (const Vec<SIZE, TYPE> &other) const {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                result.store[i] = this->store[i] + other[i];
-            }
-            return result;
-        }
+        ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
+        Vec<SIZE, TYPE> operator + (const ITERATIVE &other) const { return this->mapped(_add_out, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> operator + (const std::initializer_list<TYPE> &other) const { return this->mapped(_add_out, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> operator + (const TYPE &other) const { return this->mapped([ other ] (const TYPE &a) { return a + other; }); }
 
-        constexpr Vec<SIZE, TYPE> operator + (const TYPE &other) const {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                result.store[i] = this->store[i] + other;
-            }
-            return result;
-        }
-
-        constexpr Vec<SIZE, TYPE> &operator += (const Vec<SIZE, TYPE> &other) {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                this->store[i] += other[i];
-            }
-            return *this;
-        }
-
-        constexpr Vec<SIZE, TYPE> &operator += (const TYPE &other) {
-            for (unsigned i = 0; i < SIZE; ++i) {
-                this->store[i] += other;
-            }
-            return *this;
-        }
+        ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
+        Vec<SIZE, TYPE> &operator += (const ITERATIVE &other) { return this->map(_add_in, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> &operator += (const std::initializer_list<TYPE> &other) { return this->map(_add_in, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> &operator += (const TYPE &other) { return this->map([ other ] (TYPE &a) { a += other; }); }
 
 // -------------------------------------
 
-        constexpr Vec<SIZE, TYPE> operator - (const Vec<SIZE, TYPE> &other) const {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                result.store[i] = this->store[i] - other[i];
-            }
-            return result;
-        }
+        ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
+        Vec<SIZE, TYPE> operator - (const ITERATIVE &other) const { return this->mapped(_sub_out, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> operator - (const std::initializer_list<TYPE> &other) const { return this->mapped(_sub_out, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> operator - (const TYPE &other) const { return this->mapped([ other ] (const TYPE &a) { return a - other; }); }
 
-        constexpr Vec<SIZE, TYPE> operator - (const TYPE &other) const {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                result.store[i] = this->store[i] - other;
-            }
-            return result;
-        }
-
-        constexpr Vec<SIZE, TYPE> &operator -= (const Vec<SIZE, TYPE> &other) {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                this->store[i] -= other[i];
-            }
-            return *this;
-        }
-
-        constexpr Vec<SIZE, TYPE> &operator -= (const TYPE &other) {
-            for (unsigned i = 0; i < SIZE; ++i) {
-                this->store[i] -= other;
-            }
-            return *this;
-        }
+        ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
+        Vec<SIZE, TYPE> &operator -= (const ITERATIVE &other) { return this->map(_sub_in, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> &operator -= (const std::initializer_list<TYPE> &other) { return this->map(_sub_in, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> &operator -= (const TYPE &other) { return this->map([ other ] (TYPE &a) { a -= other; }); }
 
 // -------------------------------------
 
-        constexpr Vec<SIZE, TYPE> operator * (const Vec<SIZE, TYPE> &other) const {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                result.store[i] = this->store[i] * other[i];
-            }
-            return result;
-        }
+        ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
+        Vec<SIZE, TYPE> operator * (const ITERATIVE &other) const { return this->mapped(_mul_out, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> operator * (const std::initializer_list<TYPE> &other) const { return this->mapped(_mul_out, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> operator * (const TYPE &other) const { return this->mapped([ other ] (const TYPE &a) { return a * other; }); }
 
-        constexpr Vec<SIZE, TYPE> operator * (const TYPE &other) const {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                result.store[i] = this->store[i] * other;
-            }
-            return result;
-        }
-
-        constexpr Vec<SIZE, TYPE> &operator *= (const Vec<SIZE, TYPE> &other) {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                this->store[i] -= other[i];
-            }
-            return *this;
-        }
-
-        constexpr Vec<SIZE, TYPE> &operator *= (const TYPE &other) {
-            for (unsigned i = 0; i < SIZE; ++i) {
-                this->store[i] -= other;
-            }
-            return *this;
-        }
+        ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
+        Vec<SIZE, TYPE> &operator *= (const ITERATIVE &other) { return this->map(_mul_in, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> &operator *= (const std::initializer_list<TYPE> &other) { return this->map(_mul_in, std::begin(other), std::end(other)); }
+        Vec<SIZE, TYPE> &operator *= (const TYPE &other) { return this->map([ other ] (TYPE &a) { a *= other; }); }
 
 // -------------------------------------
 
@@ -535,6 +563,9 @@ namespace Engine {
 
     template <unsigned SIZE, typename TYPE>
     const Vec<SIZE, TYPE> Vec<SIZE, TYPE>::zero = Vec<SIZE, TYPE>::axis(SIZE);
+
+    template <unsigned SIZE, typename TYPE>
+    const Vec<SIZE, TYPE> Vec<SIZE, TYPE>::origin = Vec<SIZE, TYPE>::zero;
 };
 
 #endif
