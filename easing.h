@@ -5,6 +5,8 @@
 #include "defaults.h"
 
 namespace Engine {
+
+    // NOTE http://robertpenner.com/easing/
     namespace Easing {
 
     	inline float_max_t Linear (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
