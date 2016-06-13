@@ -8,6 +8,7 @@ namespace Engine {
     static constexpr float_max_t
         EPSILON = 0.0000000000000001L,
         PI = 3.141592653589793238462643383279502884L,
+        DEG15 = PI / 12.0,
         DEG30 = PI / 6.0,
         DEG45 = PI / 4.0,
         DEG60 = PI / 3.0,
