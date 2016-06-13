@@ -32,7 +32,7 @@ namespace Engine {
         inline void setB (unsigned char _b) { this->color.setR(_b); }
         inline void setA (float_max_t _a) { this->color.setA(_a); }
 
-        inline void apply (void) const { this->color.apply(); }
+        inline void apply (void) const override { this->color.apply(); }
     };
 };
 
