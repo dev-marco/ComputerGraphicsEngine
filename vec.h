@@ -487,59 +487,72 @@ namespace Engine {
 
 // -----------------------------------------------------------------------------
 
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> operator + (const CONSTRUCTIBLE &other, const Vec<SIZE, TYPE> &vec) { return vec.mapped([ other ] (const TYPE &a) { return _add_out(a, other); }); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> operator + (const Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.mapped([ other ] (const TYPE &a) { return _add_out(a, other); }); }
         ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
         Vec<SIZE, TYPE> operator + (const ITERATIVE &other) const { return this->mapped(_add_out, std::begin(other), std::end(other)); }
         Vec<SIZE, TYPE> operator + (const std::initializer_list<TYPE> &other) const { return this->mapped(_add_out, std::begin(other), std::end(other)); }
-        Vec<SIZE, TYPE> operator + (const TYPE &other) const { return this->mapped([ other ] (const TYPE &a) { return a + other; }); }
 
+
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> &operator += (const CONSTRUCTIBLE &other, Vec<SIZE, TYPE> &vec) { return vec.map([ other ] (TYPE &a) { _add_in(a, other); }); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> &operator += (Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.map([ other ] (TYPE &a) { _add_in(a, other); }); }
         ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
         Vec<SIZE, TYPE> &operator += (const ITERATIVE &other) { return this->map(_add_in, std::begin(other), std::end(other)); }
         Vec<SIZE, TYPE> &operator += (const std::initializer_list<TYPE> &other) { return this->map(_add_in, std::begin(other), std::end(other)); }
-        Vec<SIZE, TYPE> &operator += (const TYPE &other) { return this->map([ other ] (TYPE &a) { a += other; }); }
 
 // -------------------------------------
 
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> operator - (const CONSTRUCTIBLE &other, const Vec<SIZE, TYPE> &vec) { return vec.mapped([ other ] (const TYPE &a) { return _sub_out(a, other); }); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> operator - (const Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.mapped([ other ] (const TYPE &a) { return _sub_out(a, other); }); }
         ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
         Vec<SIZE, TYPE> operator - (const ITERATIVE &other) const { return this->mapped(_sub_out, std::begin(other), std::end(other)); }
         Vec<SIZE, TYPE> operator - (const std::initializer_list<TYPE> &other) const { return this->mapped(_sub_out, std::begin(other), std::end(other)); }
-        Vec<SIZE, TYPE> operator - (const TYPE &other) const { return this->mapped([ other ] (const TYPE &a) { return a - other; }); }
 
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> &operator -= (const CONSTRUCTIBLE &other, Vec<SIZE, TYPE> &vec) { return vec.map([ other ] (TYPE &a) { _sub_in(a, other); }); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> &operator -= (Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.map([ other ] (TYPE &a) { _sub_in(a, other); }); }
         ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
         Vec<SIZE, TYPE> &operator -= (const ITERATIVE &other) { return this->map(_sub_in, std::begin(other), std::end(other)); }
         Vec<SIZE, TYPE> &operator -= (const std::initializer_list<TYPE> &other) { return this->map(_sub_in, std::begin(other), std::end(other)); }
-        Vec<SIZE, TYPE> &operator -= (const TYPE &other) { return this->map([ other ] (TYPE &a) { a -= other; }); }
 
 // -------------------------------------
 
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> operator * (const CONSTRUCTIBLE &other, const Vec<SIZE, TYPE> &vec) { return vec.mapped([ other ] (const TYPE &a) { return _mul_out(a, other); }); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> operator * (const Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.mapped([ other ] (const TYPE &a) { return _mul_out(a, other); }); }
         ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
         Vec<SIZE, TYPE> operator * (const ITERATIVE &other) const { return this->mapped(_mul_out, std::begin(other), std::end(other)); }
         Vec<SIZE, TYPE> operator * (const std::initializer_list<TYPE> &other) const { return this->mapped(_mul_out, std::begin(other), std::end(other)); }
-        Vec<SIZE, TYPE> operator * (const TYPE &other) const { return this->mapped([ other ] (const TYPE &a) { return a * other; }); }
 
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> &operator *= (const CONSTRUCTIBLE &other, Vec<SIZE, TYPE> &vec) { return vec.map([ other ] (TYPE &a) { _mul_in(a, other); }); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> &operator *= (Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.map([ other ] (TYPE &a) { _mul_in(a, other); }); }
         ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
         Vec<SIZE, TYPE> &operator *= (const ITERATIVE &other) { return this->map(_mul_in, std::begin(other), std::end(other)); }
         Vec<SIZE, TYPE> &operator *= (const std::initializer_list<TYPE> &other) { return this->map(_mul_in, std::begin(other), std::end(other)); }
-        Vec<SIZE, TYPE> &operator *= (const TYPE &other) { return this->map([ other ] (TYPE &a) { a *= other; }); }
 
 // -------------------------------------
+//
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> operator / (const CONSTRUCTIBLE &other, const Vec<SIZE, TYPE> &vec) { return vec.mapped([ other ] (const TYPE &a) { return _div_out(a, other); }); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> operator / (const Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.mapped([ other ] (const TYPE &a) { return _div_out(a, other); }); }
 
-        constexpr Vec<SIZE, TYPE> operator / (const TYPE &other) const {
-            Vec<SIZE, TYPE> result;
-            for (unsigned i = 0; i < SIZE; ++i) {
-                result.store[i] = this->store[i] / other;
-            }
-            return result;
-        }
-
-        constexpr Vec<SIZE, TYPE> &operator /= (const TYPE &other) {
-            for (unsigned i = 0; i < SIZE; ++i) {
-                this->store[i] /= other;
-            }
-            return *this;
-        }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> &operator /= (const CONSTRUCTIBLE &other, Vec<SIZE, TYPE> &vec) { return vec.map([ other ] (TYPE &a) { _div_in(a, other); }); }
+        ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        friend Vec<SIZE, TYPE> &operator /= (Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.map([ other ] (TYPE &a) { _div_in(a, other); }); }
 
 // -----------------------------------------------------------------------------
-
 
     };
 
