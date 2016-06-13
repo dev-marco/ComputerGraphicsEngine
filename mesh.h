@@ -18,10 +18,6 @@
 namespace Engine {
     class Mesh {
 
-        Vec<3> position;
-        Quaternion orientation;
-        std::vector<Mesh *> children;
-
     public:
 
         template <typename T>
@@ -32,6 +28,32 @@ namespace Engine {
                 return min_value;
             }
             return value;
+        }
+
+        inline static std::array<std::array<Vec<3>, 2>, 3> edgesTriangle (
+            const Vec<3> &tri_point_1,
+            const Vec<3> &tri_point_2,
+            const Vec<3> &tri_point_3
+        ) {
+            return {{
+                { tri_point_1, tri_point_2 },
+                { tri_point_2, tri_point_3 },
+                { tri_point_3, tri_point_1 }
+            }};
+        }
+
+        inline static std::array<std::array<Vec<3>, 2>, 4> edgesRectangle (
+            const Vec<3> &rect_top_left,
+            const Vec<3> &rect_bottom_left,
+            const Vec<3> &rect_bottom_right,
+            const Vec<3> &rect_top_right
+        ) {
+            return {{
+                { rect_top_left, rect_bottom_left },
+                { rect_bottom_left, rect_bottom_right },
+                { rect_bottom_right, rect_top_right },
+                { rect_top_right, rect_top_left }
+            }};
         }
 
         inline static float_max_t areaTriangle (
@@ -55,18 +77,6 @@ namespace Engine {
             }
         }
 
-        inline static constexpr std::array<std::array<Vec<3>, 2>, 3> edgesTriangle (
-            const Vec<3> &tri_point_1,
-            const Vec<3> &tri_point_2,
-            const Vec<3> &tri_point_3
-        ) {
-            return {{
-                { tri_point_1, tri_point_2 },
-                { tri_point_2, tri_point_3 },
-                { tri_point_3, tri_point_1 }
-            }};
-        }
-
         inline static float_max_t areaRectangle (
             const Vec<3> &rect_top_left,
             const Vec<3> &rect_bottom_left,
@@ -75,26 +85,13 @@ namespace Engine {
             return std::sqrt((rect_bottom_left - rect_top_left).length2() * (rect_bottom_right - rect_bottom_left).length2());
         }
 
-        inline static constexpr std::array<std::array<Vec<3>, 2>, 4> edgesRectangle (
-            const Vec<3> &rect_top_left,
-            const Vec<3> &rect_bottom_left,
-            const Vec<3> &rect_bottom_right,
-            const Vec<3> &rect_top_right
-        ) {
-            return {{
-                { rect_top_left, rect_bottom_left },
-                { rect_bottom_left, rect_bottom_right },
-                { rect_bottom_right, rect_top_right },
-                { rect_top_right, rect_top_left }
-            }};
-        }
+// -----------------------------------------------------------------------------
 
-        static float_max_t distanceRayToPoint (
+        static float_max_t distancePointRay (
+            const Vec<3> &point,
             const Vec<3> &ray_start,
             const Vec<3> &ray_end,
-            const Vec<3> &point,
-            Vec<3> &near_point,
-            bool infinite = false
+            Vec<3> &near_point
         ) {
             const Vec<3> delta_ray = ray_end - ray_start;
             const float_max_t length_2 = delta_ray.length2();
@@ -102,19 +99,113 @@ namespace Engine {
             if (length_2 == 0.0) {
                 near_point = ray_start;
             } else {
-                float_max_t param = ((point - ray_start) * delta_ray).sum() / length_2;
-
-                if (!infinite) {
-                    param = clamp(param, 0.0, 1.0);
-                }
-
-                near_point = ray_start + param * delta_ray;
+                const float_max_t param = clamp(((point - ray_start) * delta_ray).sum() / length_2, 0.0, 1.0);
+                near_point = ray_start + (param * delta_ray);
             }
 
             return point.distance(near_point);
         }
 
-        template <typename T>
+        static float_max_t distancePointSphere (
+            const Vec<3> &point,
+            const Vec<3> &sphere_center,
+            float_max_t sphere_radius
+        ) {
+            float_max_t d = point.distance(sphere_center) - sphere_radius;
+            if (d > 0.0) {
+                return d;
+            }
+            return 0.0;
+        }
+
+        // NOTE http://liris.cnrs.fr/Documents/Liris-1297.pdf
+        static float_max_t distancePointCylinder (
+            const Vec<3> &point,
+            const Vec<3> &cylinder_start,
+            const Vec<3> &cylinder_end,
+            float_max_t cylinder_radius
+        ) {
+            const Vec<3>
+                diff = cylinder_end - cylinder_start,
+                c = cylinder_start.lerped(cylinder_end, 0.5);
+            float_max_t
+                l = diff.length(),
+                x = std::abs((c - point).dot(diff / l)),
+                y2 = c.distance2(point) - (x * x);
+
+            x -= l / 2.0;
+
+            if (x < 0) {
+                if (y2 < (cylinder_radius * cylinder_radius)) {
+                    return 0.0;
+                } else {
+                    return std::sqrt(y2) - cylinder_radius;
+                }
+            }
+            if (y2 < (cylinder_radius * cylinder_radius)) {
+                return x;
+            } else {
+                float_max_t p = std::sqrt(y2) - cylinder_radius;
+                return std::sqrt(p * p + x * x);
+            }
+        }
+
+        static float_max_t distancePointPlane (
+            const Vec<3> &point,
+            const Vec<3> &plane_normal,
+            const Vec<3> &plane_point,
+            Vec<3> &near_point
+        ) {
+            near_point = point + plane_normal * ((plane_normal.dot(plane_point) - plane_normal.dot(point)) / plane_normal.length2());
+            return near_point.distance(point);
+        }
+
+// -----------------------------------------------------------------------------
+
+        static float_max_t distanceSphereSphere (
+            const Vec<3> &center_1,
+            float_max_t radius_1,
+            const Vec<3> &center_2,
+            float_max_t radius_2
+        ) {
+            float_max_t d = distancePointSphere(center_1, center_2, radius_2) - radius_1;
+            if (d > 0.0) {
+                return d;
+            }
+            return 0.0;
+        }
+
+        static float_max_t distanceSphereCylinder (
+            const Vec<3> &sphere_center,
+            float_max_t sphere_radius,
+            const Vec<3> &cylinder_start,
+            const Vec<3> &cylinder_end,
+            float_max_t cylinder_radius
+        ) {
+            float_max_t d = distancePointCylinder(sphere_center, cylinder_start, cylinder_end, cylinder_radius) - sphere_radius;
+            if (d > 0.0) {
+                return d;
+            }
+            return 0.0;
+        }
+
+        static float_max_t distanceSpherePlane (
+            const Vec<3> &sphere_center,
+            float_max_t sphere_radius,
+            const Vec<3> &plane_normal,
+            const Vec<3> &plane_point,
+            Vec<3> &near_point
+        ) {
+            float_max_t d = distancePointPlane(sphere_center, plane_normal, plane_point, near_point) - sphere_radius;
+            if (d > 0.0) {
+                return d;
+            }
+            return 0.0;
+        }
+
+// -----------------------------------------------------------------------------
+
+        template <typename T, typename = typename T::iterator>
         static constexpr bool collisionPointConvexPolygon2D (
             const Vec<3> &point,
             T edges_ccw
@@ -131,7 +222,7 @@ namespace Engine {
             return true;
         }
 
-        inline static constexpr bool collisionPointTriangle2D (
+        inline static bool collisionPointTriangle2D (
             const Vec<3> &point,
             const Vec<3> &tri_point_1,
             const Vec<3> &tri_point_2,
@@ -140,7 +231,7 @@ namespace Engine {
             return collisionPointConvexPolygon2D(point, edgesTriangle(tri_point_1, tri_point_2, tri_point_3));
         };
 
-        inline static constexpr bool collisionPointRectangle2D (
+        inline static bool collisionPointRectangle2D (
             const Vec<3> &point,
             const Vec<3> &rect_top_left,
             const Vec<3> &rect_bottom_left,
@@ -150,7 +241,7 @@ namespace Engine {
             return collisionPointConvexPolygon2D(point, edgesRectangle(rect_top_left, rect_bottom_left, rect_bottom_right, rect_top_right));
         }
 
-        inline static constexpr bool collisionSpheres (
+        inline static bool collisionSpheres (
             const Vec<3> &position_1,
             const float_max_t radius_1,
             const Vec<3> &position_2,
@@ -188,9 +279,8 @@ namespace Engine {
             const Vec<3> &ray_end,
             const Vec<3> &circle_center,
             const float_max_t circle_radius,
-            Vec<3> &near_point,
-            const bool infinite = false
-        ) { return distanceRayToPoint(ray_start, ray_end, circle_center, near_point, infinite) <= circle_radius; }
+            Vec<3> &near_point
+        ) { return distancePointRay(circle_center, ray_start, ray_end, near_point) <= circle_radius; }
 
         inline static bool collisionRectangleCircle2D (
             const Vec<3> &rect_top_left,
@@ -216,29 +306,26 @@ namespace Engine {
 
             return false;
         }
+    private:
 
-        Mesh (const Vec<3> &_position = Vec<3>::zero, const Quaternion &_orientation = Quaternion::identity) :
-            position(_position), orientation(_orientation) {};
+            Vec<3> position;
+            Quaternion orientation;
+            std::vector<Mesh *> children;
+            Background *background;
+
+    public:
+
+        Mesh (const Vec<3> &_position = Vec<3>::zero, const Quaternion &_orientation = Quaternion::identity, Background *_background = nullptr) :
+            position(_position), orientation(_orientation), background(_background) {};
 
         virtual ~Mesh () {}
 
-        void draw(const Background *background, const bool only_border = false) const;
-
-        inline void addChild (Mesh *child) { this->children.push_back(child); }
-
-        inline virtual void _draw (const Background *background, const bool only_border) const {}
+        virtual void draw(const bool only_border = false) const final;
+        inline virtual void _draw (const bool only_border) const {}
 
         inline virtual Mesh *getCollisionSpace (const Vec<3> &speed) const { return nullptr; }
 
-        inline virtual bool _detectCollision (
-            const Mesh *other,
-            const Vec<3> &my_offset,
-            const Vec<3> &other_offset,
-            Vec<3> &point,
-            const bool try_inverse = true
-        ) const { return false; }
-
-        inline bool detectCollision (
+        inline virtual bool detectCollision (
             Mesh *other,
             const Vec<3> &my_offset,
             const Vec<3> &my_speed,
@@ -246,7 +333,7 @@ namespace Engine {
             const Vec<3> &other_speed,
             Vec<3> &point,
             const bool try_inverse = true
-        ) {
+        ) final {
 
             if (this->_detectCollision(other, my_offset, other_offset, point, try_inverse)) {
                 return true;
@@ -259,7 +346,6 @@ namespace Engine {
                 if (my_space) {
 
                     if (my_space->_detectCollision(other, my_offset, other_offset, point, try_inverse)) {
-                        std::cout << "first case " << this->getType() << " " << other->getType() << std::endl;
                         return true;
                     }
 
@@ -271,7 +357,6 @@ namespace Engine {
                             other_space &&
                             my_space->_detectCollision(other_space.get(), my_offset, other_offset, point, try_inverse)
                         ) {
-                            std::cout << "second case " << this->getType() << " " << other->getType() << std::endl;
                             return true;
                         }
                     }
@@ -284,11 +369,24 @@ namespace Engine {
             return false;
         }
 
+        inline virtual bool _detectCollision (
+            const Mesh *other,
+            const Vec<3> &my_offset,
+            const Vec<3> &other_offset,
+            Vec<3> &point,
+            const bool try_inverse = true
+        ) const { return false; }
+
         inline const Quaternion &getOrientation (void) const { return this->orientation; }
-        inline void setOrientation (const Vec<3> &_orientation) { this->orientation = _orientation; }
+        inline virtual void setOrientation (const Quaternion &_orientation) { this->orientation = _orientation; }
 
         inline const Vec<3> &getPosition () const { return this->position; }
-        inline void setPosition (const Vec<3> &_position) { this->position = _position; }
+        inline virtual void setPosition (const Vec<3> &_position) { this->position = _position; }
+
+        inline Background *getBackground (void) const { return this->background; }
+
+        inline const std::vector<Mesh *> &getChildren (void) const { return this->children; }
+        inline virtual void addChild (Mesh *child) { this->children.push_back(child); }
 
         inline virtual const std::string getType (void) const { return "mesh"; }
     };
@@ -299,12 +397,12 @@ namespace Engine {
         Vec<3> top_left, top_right, bottom_left, bottom_right;
 
     public:
-        inline Rectangle2D (const Vec<3> &_position, float_max_t _width, float_max_t _height, const Quaternion _orientation = Quaternion::identity) :
-            Mesh(_position, _orientation), width(_width), height(_height) {
+        inline Rectangle2D (const Vec<3> &_position, float_max_t _width, float_max_t _height, const Quaternion _orientation = Quaternion::identity, Background *_background = nullptr) :
+            Mesh(_position, _orientation, _background), width(_width), height(_height) {
             this->updatePositions();
         }
 
-        void updatePositions (void) {
+        inline void updatePositions (void) {
             const Vec<3>
                 top_left = this->getPosition(),
                 bottom_right = { top_left[0] + this->getWidth(), top_left[1] - this->getHeight(), top_left[2] };
@@ -320,7 +418,7 @@ namespace Engine {
 
         inline void setWidth (const float_max_t _width) { this->width = _width, this->updatePositions(); }
         inline void setHeight (const float_max_t _height) { this->height = _height, this->updatePositions(); }
-        inline void setOrientation (const Vec<3> &_orientation) { Mesh::setOrientation(_orientation), this->updatePositions(); }
+        inline void setOrientation (const Quaternion &_orientation) override { Mesh::setOrientation(_orientation), this->updatePositions(); }
         inline void setPosition (const Vec<3> &_position) { Mesh::setPosition(_position), this->updatePositions(); }
 
         inline const Vec<3> &getTopLeftPosition (void) const { return this->top_left; }
@@ -328,25 +426,27 @@ namespace Engine {
         inline const Vec<3> &getBottomLeftPosition (void) const { return this->bottom_left; }
         inline const Vec<3> &getBottomRightPosition (void) const { return this->bottom_right; }
 
-        void _draw (const Background *background, const bool only_border) const {
+        void _draw (const bool only_border) const override {
 
-            const Vec<3>
-                top_left = this->getPosition(),
-                bottom_right = { top_left[0] + this->getWidth(), top_left[1] - this->getHeight(), top_left[2] };
+            const float_max_t
+                width = this->getWidth(),
+                height = -this->getHeight();
 
             if (only_border) {
-                Draw::begin(GL_LINE_LOOP);
-            } else {
-                Draw::begin(GL_QUADS);
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             }
 
-            background->apply();
+            Draw::begin(this->getBackground());
 
             Draw::normal(Vec<3>::axisZ);
-            Draw::vertex(top_left);
-            Draw::vertex(top_left[0], bottom_right[1], top_left[2]);
-            Draw::vertex(bottom_right);
-            Draw::vertex(bottom_right[0], top_left[1], top_left[2]);
+
+            Draw::vertex(0.0, 0.0, 0.0);
+            Draw::vertex(0.0, height, 0.0);
+            Draw::vertex(width, 0.0, 0.0);
+
+            Draw::vertex(width, 0.0, 0.0);
+            Draw::vertex(0.0, height, 0.0);
+            Draw::vertex(width, height, 0.0);
 
             Draw::end();
         }
@@ -357,7 +457,7 @@ namespace Engine {
             const Vec<3> &other_offset,
             Vec<3> &point,
             const bool try_inverse = true
-        ) const {
+        ) const override {
 
             if (other->getType() == "rectangle2d") {
                 const Rectangle2D *rect = static_cast<const Rectangle2D *>(other);
@@ -379,51 +479,85 @@ namespace Engine {
             return false;
         }
 
-        inline const std::string getType (void) const { return "rectangle2d"; }
+        inline const std::string getType (void) const override { return "rectangle2d"; }
 
     };
 
     class Polygon2D : public Mesh {
 
-        float_max_t radius;
+        float_max_t radius, ratio_x, ratio_y;
         unsigned sides;
+        std::vector<Vec<2>> vertexes;
+
+        void updateVertexes (void) {
+
+            const Vec<3> position = this->getPosition();
+            const float_max_t
+                sides = this->getSides(),
+                radius = this->getRadius(),
+                step = (PI * 2.0) / static_cast<float_max_t>(sides);
+            float_max_t ang = 0.0;
+
+            this->vertexes.resize(sides);
+
+            for (Vec<2> &vertex : this->vertexes) {
+                vertex[0] = position[0] + radius * std::cos(ang) * this->getRatioX();
+                vertex[1] = position[1] + radius * std::sin(ang) * this->getRatioY();
+                ang += step;
+            }
+        }
 
     public:
 
-        inline Polygon2D (const Vec<3> &_position, float_max_t _radius, unsigned _sides, const Quaternion _orientation = Quaternion::identity) :
-            Mesh(_position, _orientation), radius(_radius), sides(_sides) {};
+        inline Polygon2D (const Vec<3> &_position, float_max_t _radius, unsigned _sides, float_max_t _ratio_x = 1.0, float_max_t _ratio_y = 1.0, const Quaternion _orientation = Quaternion::identity, Background *_background = nullptr) :
+            Mesh(_position, _orientation, _background), radius(_radius), ratio_x(_ratio_x), ratio_y(_ratio_y), sides(_sides) {
+                this->updateVertexes();
+            };
 
-        void _draw (const Background *background, const bool only_border) const {
+        void _draw (const bool only_border) const override {
 
             const Vec<3> position = this->getPosition();
-            const float_max_t step = (PI * 2.0) / static_cast<float_max_t>(this->sides);
+            const std::vector<Vec<2>> vertexes = this->getVertexes();
+            const float_max_t sides = this->getSides();
 
-            float_max_t ang = 0.0;
+            unsigned j = 0;
 
             if (only_border) {
-                Draw::begin(GL_LINE_LOOP);
-            } else {
-                Draw::begin(GL_POLYGON);
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             }
 
-            background->apply();
+            Draw::begin(this->getBackground());
 
             Draw::normal(Vec<3>::axisZ);
 
-            for (unsigned i = 0; i < this->sides; i++) {
-
-                Draw::vertex(position[0] + this->getRadius() * std::cos(ang), position[1] + this->getRadius() * std::sin(ang), position[2]);
-                ang += step;
-
+            for (unsigned i = 1; i < sides; ++i, ++j) {
+                Draw::vertex(vertexes[j][0], vertexes[j][1], position[2]);
+                Draw::vertex(position);
+                Draw::vertex(vertexes[i][0], vertexes[i][1], position[2]);
             }
+
+            Draw::vertex(vertexes[j][0], vertexes[j][1], position[2]);
+            Draw::vertex(position);
+            Draw::vertex(vertexes[0][0], vertexes[0][1], position[2]);
 
             Draw::end();
         }
 
         inline float_max_t getRadius (void) const { return this->radius; }
-        inline void setRadius (const float_max_t _radius) { this->radius = _radius; }
+        inline void setRadius (const float_max_t _radius) { this->radius = _radius, this->updateVertexes(); }
 
-        Mesh *getCollisionSpace (const Vec<3> &speed) const {
+        inline float_max_t getRatioX (void) const { return this->ratio_x; }
+        inline void setRatioX (const float_max_t _ratio_x) { this->ratio_x = _ratio_x, this->updateVertexes(); }
+
+        inline float_max_t getRatioY (void) const { return this->ratio_y; }
+        inline void setRatioY (const float_max_t _ratio_y) { this->ratio_y = _ratio_y, this->updateVertexes(); }
+
+        inline unsigned getSides (void) const { return this->sides; }
+        inline void setSides (const unsigned _sides) { this->sides = _sides, this->updateVertexes(); }
+
+        inline const std::vector<Vec<2>> &getVertexes (void) const { return this->vertexes; }
+
+        Mesh *getCollisionSpace (const Vec<3> &speed) const override {
 
             if (speed.length2() > (this->getRadius() * this->getRadius())) {
                 const float_max_t speed_angle = std::atan2(speed[1], speed[0]);
@@ -448,7 +582,7 @@ namespace Engine {
             const Vec<3> &other_offset,
             Vec<3> &point,
             const bool try_inverse = true
-        ) const {
+        ) const override {
 
             if (other->getType() == "polygon2d" || other->getType() == "sphere2d") {
                 const Polygon2D *poly = static_cast<const Polygon2D *>(other);
@@ -472,16 +606,160 @@ namespace Engine {
             return false;
         }
 
-        inline const std::string getType (void) const { return "polygon2d"; }
+        inline const std::string getType (void) const override { return "polygon2d"; }
 
     };
 
     class Sphere2D : public Polygon2D {
     public:
-        Sphere2D (const Vec<3> &_position, const float_max_t _radius) :
-            Polygon2D (_position, _radius, _radius * 20, Quaternion::identity) {}
+        Sphere2D (const Vec<3> &_position, float_max_t _radius, Background *_background) :
+            Polygon2D(_position, _radius, 20, 1.0, 1.0, Quaternion::identity, _background) {}
 
-        inline const std::string getType (void) const { return "sphere2d"; }
+        inline const std::string getType (void) const override { return "sphere2d"; }
+    };
+
+    class Ellipse2D : public Polygon2D {
+    public:
+        Ellipse2D (const Vec<3> &_position, float_max_t _radius, float_max_t _ratio_x, float_max_t _ratio_y, Background *_background) :
+            Polygon2D(_position, _radius, 20, _ratio_x, _ratio_y, Quaternion::identity, _background) {}
+
+        inline const std::string getType (void) const override { return "ellipse2d"; }
+    };
+
+    class Cone : public Mesh {
+
+        Vec<3> end;
+        float_max_t base_radius, top_radius, height;
+
+    public:
+        Cone (const Vec<3> &_start, const Vec<3> &_end, float_max_t _base_radius, float_max_t _top_radius, Background *_background = nullptr) :
+            Mesh(_start, Quaternion::identity, _background), end(_end), base_radius(_base_radius), top_radius(_top_radius), height(_start.distance(_end)) {
+                this->setOrientation(Quaternion::difference(Vec<3>::axisZ, this->getEnd()));
+        }
+
+        Cone (const Vec<3> &_start, const Quaternion &_orientation, float_max_t _base_radius, float_max_t _top_radius, const float_max_t _height, Background *_background) :
+            Mesh(_start, _orientation, _background), end(_orientation.rotated(_start + Vec<3>({ 0.0, 0.0, _height }))), base_radius(_base_radius), top_radius(_top_radius), height(_height) {}
+
+        inline float_max_t getBaseRadius (void) const { return this->base_radius; }
+        inline float_max_t getTopRadius (void) const { return this->top_radius; }
+
+        inline virtual void setBaseRadius (float_max_t _base_radius) { this->base_radius = _base_radius; }
+        inline virtual void setTopRadius (float_max_t _top_radius) { this->top_radius = _top_radius; }
+
+        inline float_max_t getHeight (void) const { return this->height; }
+
+        inline const Vec<3> &getStart (void) const { return this->getPosition(); }
+        inline const Vec<3> &getEnd (void) const { return this->end; }
+
+        void _draw (const bool only_border) const {
+            this->getBackground()->apply();
+            auto quad = gluNewQuadric();
+            gluCylinder(quad, this->getBaseRadius(), this->getTopRadius(), this->getHeight(), 10, 10);
+            gluDeleteQuadric(quad);
+        }
+
+        inline const std::string getType (void) const override { return "cone"; }
+    };
+
+    class Cylinder : public Cone {
+
+    public:
+        Cylinder (const Vec<3> &_start, const Vec<3> &_end, float_max_t _radius, Background *_background = nullptr) :
+            Cone(_start, _end, _radius, _radius, _background) {}
+
+        Cylinder (const Vec<3> &_start, const Quaternion &_orientation, float_max_t _radius, float_max_t _height, Background *_background = nullptr) :
+            Cone(_start, _orientation, _radius, _radius, _height, _background) {}
+
+        inline float_max_t getRadius (void) const { return this->getBaseRadius(); }
+
+        inline void setRadius (float_max_t _radius) {
+            Cone::setBaseRadius(_radius), Cone::setTopRadius(_radius);
+        }
+
+        inline void setBaseRadius (float_max_t _radius) { this->setRadius(_radius); }
+        inline void setTopRadius (float_max_t _radius) { this->setRadius(_radius); }
+
+        inline const std::string getType (void) const override { return "cylinder"; }
+    };
+
+    class Sphere3D : public Mesh {
+
+        float_max_t radius;
+
+        static void recursiveTriangle(
+            const Vec<3> &a,
+            const Vec<3> &b,
+            const Vec<3> &c,
+            const float_max_t radius,
+            const unsigned steps
+        ) {
+
+            if (steps == 0) {
+                Draw::normal(a);
+                Draw::vertex(a[0] * radius, a[1] * radius, a[2] * radius);
+
+                Draw::normal(b);
+                Draw::vertex(b[0] * radius, b[1] * radius, b[2] * radius);
+
+                Draw::normal(c);
+                Draw::vertex(c[0] * radius, c[1] * radius, c[2] * radius);
+            } else {
+                const unsigned next_step = steps - 1;
+                const Vec<3>
+                    ab = ((a + b) * 0.5).normalized(),
+                    ac = ((a + c) * 0.5).normalized(),
+                    bc = ((b + c) * 0.5).normalized();
+
+                recursiveTriangle( a, ab, ac, radius, next_step);
+                recursiveTriangle( b, bc, ab, radius, next_step);
+                recursiveTriangle( c, ac, bc, radius, next_step);
+                recursiveTriangle(ab, bc, ac, radius, next_step);
+            }
+        }
+
+    public:
+        Sphere3D (const Vec<3> &_position, const float_max_t _radius, Background *_background = nullptr) :
+            Mesh(_position, Quaternion::identity, _background), radius(_radius) {};
+
+        float_max_t getRadius (void) const { return this->radius; }
+        void setRadius (float_max_t _radius) { this->radius = _radius; }
+
+        void _draw (const bool only_border) const override {
+
+            constexpr float_max_t
+                X = 0.525731112119133606,
+                Z = 0.850650808352039932;
+
+            static Vec<3> vdata[12] = {
+                {  -X, 0.0,   Z }, {   X, 0.0,   Z }, {  -X, 0.0,  -Z },
+                {   X, 0.0,  -Z }, { 0.0,   Z,   X }, { 0.0,   Z,  -X },
+                { 0.0,  -Z,   X }, { 0.0,  -Z,  -X }, {   Z,   X, 0.0 },
+                {  -Z,   X, 0.0 }, {   Z,  -X, 0.0 }, {  -Z,  -X, 0.0 }
+            };
+
+            constexpr unsigned tindices[20][3] = {
+                {  0,  4,  1 }, {  0,  9,  4 }, {  9,  5,  4 }, {  4,  5,  8 },
+                {  4,  8,  1 }, {  8, 10,  1 }, {  8,  3, 10 }, {  5,  3,  8 },
+                {  5,  2,  3 }, {  2,  7,  3 }, {  7, 10,  3 }, {  7,  6, 10 },
+                {  7, 11,  6 }, { 11,  0,  6 }, {  0,  1,  6 }, {  6,  1, 10 },
+                {  9,  0, 11 }, {  9, 11,  2 }, {  9,  2,  5 }, {  7,  2, 11 }
+            }, steps = 1;
+
+            if (only_border) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            }
+
+            Draw::begin(this->getBackground());
+
+            for (const auto &indices : tindices) {
+                recursiveTriangle(vdata[indices[0]], vdata[indices[1]], vdata[indices[2]], this->getRadius(), steps);
+            }
+
+            Draw::end();
+
+        }
+
+        inline const std::string getType (void) const override { return "sphere3d"; }
     };
 };
 
