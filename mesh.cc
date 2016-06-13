@@ -127,18 +127,18 @@ namespace Engine {
         return false;
     }
 
-    void Mesh::draw (const Background *background, const bool only_border) const {
+    void Mesh::draw (const bool only_border) const {
 
         Draw::push();
 
         Draw::translate(this->getPosition());
         Draw::rotate(this->getOrientation());
 
-        this->_draw(background, only_border);
+        this->_draw(only_border);
 
         if (!this->children.empty()) {
             for (const auto &mesh : this->children) {
-                mesh->draw(background, only_border);
+                mesh->draw(only_border);
             }
         }
 
