@@ -1,6 +1,7 @@
 #ifndef SRC_ENGINE_QUATERNION_H_
 #define SRC_ENGINE_QUATERNION_H_
 
+#include <list>
 #include "defaults.h"
 #include "vec.h"
 
@@ -25,8 +26,10 @@ namespace Engine {
 
 // -------------------------------------
 
-        static Quaternion difference (const Vec<3> &vec_1, const Vec<3> &vec_2) {
+        static Quaternion difference (Vec<3> vec_1, Vec<3> vec_2) {
             static Vec<3> axis;
+            vec_1.normalize();
+            vec_2.normalize();
             constexpr float_max_t border = 1.0 - EPSILON;
             const float_max_t dot_prod = vec_1.dot(vec_2);
             if (dot_prod > border) {
@@ -42,13 +45,51 @@ namespace Engine {
             return Quaternion(axis[0], axis[1], axis[2], 1.0 + dot_prod);
         }
 
+// -------------------------------------
+
+        static Quaternion eulerZYX (float_max_t Z, float_max_t Y, float_max_t X) {
+
+            const float_max_t
+                hz = Z / 2.0, hy = Y / 2.0, hx = X / 2.0,
+                cz = std::cos(hz), sz = std::sin(hz),
+                cy = std::cos(hy), sy = std::sin(hy),
+                cx = std::cos(hx), sx = std::sin(hx),
+                czy = cz * cy, szy = sz * sy;
+
+            return Quaternion(
+                czy * sx - szy * cx,
+                sz * cy * cx + cz * sy * sx,
+                cz * sy * cx - sz * cy * sx,
+                czy * cx - szy * sx
+            );
+        }
+
+        static Quaternion average (std::list<Quaternion> quaternions) {
+            if (!quaternions.empty()) {
+                const Quaternion first = quaternions.front();
+                Quaternion result = first;
+                quaternions.pop_front();
+                for (auto &quaternion : quaternions) {
+                    if (first.dot(quaternion) < 0.0) {
+                        result -= quaternion;
+                    } else {
+                        result += quaternion;
+                    }
+                }
+                return Quaternion(result / static_cast<float_max_t>(quaternions.size()));
+            }
+            return Quaternion::identity;
+        }
+
 // -----------------------------------------------------------------------------
 
         template <
             typename TYPE_C,
             typename = typename std::enable_if<std::is_convertible<TYPE_C, Vec<4>>::value, TYPE_C>::type
         >
-        inline Quaternion (const TYPE_C &vec) : Vec<4>(vec) {}
+        inline Quaternion (const TYPE_C &vec) : Vec<4>(vec) {
+            this->normalize();
+        }
 
         inline Quaternion (float_max_t x, float_max_t y, float_max_t z, float_max_t w) : Vec<4>({ x, y, z, w }) {
             this->normalize();
@@ -89,9 +130,9 @@ namespace Engine {
                     vec[0] - pivot[0], vec[1] - pivot[1], vec[2] - pivot[2]
                 };
                 return {
-                    pivot[0] + (diff[0] * matrix[0]) + (diff[1] * matrix[4]) + (diff[1] * matrix[ 8]),
-                    pivot[1] + (diff[0] * matrix[1]) + (diff[1] * matrix[5]) + (diff[1] * matrix[ 9]),
-                    pivot[2] + (diff[0] * matrix[2]) + (diff[1] * matrix[6]) + (diff[1] * matrix[10])
+                    pivot[0] + (diff[0] * matrix[0]) + (diff[1] * matrix[4]) + (diff[2] * matrix[ 8]),
+                    pivot[1] + (diff[0] * matrix[1]) + (diff[1] * matrix[5]) + (diff[2] * matrix[ 9]),
+                    pivot[2] + (diff[0] * matrix[2]) + (diff[1] * matrix[6]) + (diff[2] * matrix[10])
                 };
             }
             return vec;
