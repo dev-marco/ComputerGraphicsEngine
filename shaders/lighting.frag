@@ -7,6 +7,12 @@ in vec3 varyingNormalDirection;  // surface normal vector in world space
 
 out vec4 finalColor;
 
+uniform float scriptTime;
+
+float rand (vec2 co){
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 struct lightSource {
     vec4 position;
     vec4 diffuse;
@@ -23,14 +29,14 @@ struct material {
     float shininess;
 };
 
-const int total_lights = 2;
+const int total_lights = 1;
 
 lightSource light[] = lightSource[](
     lightSource(
         vec4(0.0, 0.0, 1.0, 1.0),
-        vec4(1.0, 1.0, 1.0, 1.0),
-        vec4(1.0, 1.0, 1.0, 1.0),
-        1.5, 0.0, 0.0,
+        vec4(0.0, 1.0, 0.0, 0.5),
+        vec4(0.0, 1.0, 0.0, 0.5),
+        1.5, rand(vec2(scriptTime, scriptTime)), 0.0,
         15.0, 128.0,
         vec3(0.0, 0.0, -1.0)
     ),
@@ -45,25 +51,25 @@ lightSource light[] = lightSource[](
 );
 
 material mate = material(
+    vec4(0.2, 0.2, 0.2, 1.0),
     vec4(0.8, 0.8, 0.8, 0.8),
-    vec4(0.8, 0.8, 0.8, 0.8),
-    vec4(0.8, 0.8, 0.8, 0.8),
-    20.0
+    vec4(0.0, 0.0, 0.0, 1.0),
+    0.0
 );
 
-vec4 ambient_light = vec4(0.0, 0.0, 0.0, 0.0);
+vec4 ambient_light = vec4(1.0, 1.0, 1.0, 1.0);
 
 void main (void) {
     vec3
         lightDirection,
         normalDirection = normalize(varyingNormalDirection),
         viewDirection = normalize(-position.xyz);
-    vec4 result = vec4(0.0, 0.0, 0.0, 0.0);
+    vec4 result = ambient_light * mate.ambient;
     float attenuation;
 
     for (int i = 0; i < total_lights; ++i) {
 
-        vec4 ambientLighting, diffuseReflection, specularReflection;
+        vec4 diffuseReflection, specularReflection;
 
         if (0.0 == light[i].position.w) { // directional light?
 
@@ -97,8 +103,6 @@ void main (void) {
             }
         }
 
-        ambientLighting = ambient_light * mate.ambient;
-
         diffuseReflection = attenuation *
             light[i].diffuse * mate.diffuse *
             max(0.0, dot(normalDirection, lightDirection));
@@ -110,7 +114,7 @@ void main (void) {
                 pow(max(0.0, dot(reflect(-lightDirection, normalDirection), viewDirection)), mate.shininess);
         }
 
-        result += ambientLighting + diffuseReflection + specularReflection;
+        result += diffuseReflection + specularReflection;
     }
 
     finalColor = result + gl_FrontLightModelProduct.sceneColor;
