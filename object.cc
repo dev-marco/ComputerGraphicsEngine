@@ -41,14 +41,14 @@ namespace Engine {
 
         if (collision_detect) {
 
-            std::list<Object *> moving;
+            static std::list<Object *> moving;
 
             for (auto &child : this->children) {
                 if (child->isMoving()) {
                     if (child->collides()) {
                         moving.push_back(child);
                     } else {
-                        child->setPosition(child->getSpeed() * delta_time);
+                        child->setPosition(child->getPosition() + child->getSpeed() * delta_time);
                     }
                 }
             }
@@ -58,7 +58,7 @@ namespace Engine {
                 constexpr unsigned collision_samples = 4;
                 const float_max_t multiplier = delta_time / static_cast<float_max_t>(collision_samples);
                 Vec<3> point;
-                std::unordered_map<const Object *, std::unordered_set<const Object *>> collided;
+                static std::unordered_map<const Object *, std::unordered_set<const Object *>> collided;
 
                 for (unsigned i = 0; i < collision_samples; ++i) {
 
@@ -116,7 +116,7 @@ namespace Engine {
             moving.clear();
         } else {
             for (auto &child : this->children) {
-                child->setPosition(child->getSpeed() * delta_time);
+                child->setPosition(child->getPosition() + child->getSpeed() * delta_time);
             }
         }
     }
@@ -133,7 +133,7 @@ namespace Engine {
             this->beforeUpdate(now, delta_time, tick);
 
             this->move(delta_time, collision_detect);
-            this->speed += this->acceleration * delta_time;
+            this->setSpeed(this->getSpeed() + this->acceleration * delta_time);
 
             for (auto &child : this->children) {
                 child->update(now, delta_time, tick, collision_detect);
@@ -153,6 +153,8 @@ namespace Engine {
         if (Object::isValid(this)) {
             if (this->display) {
 
+                Mesh *mesh = this->getMesh();
+
                 Draw::push();
 
                 Draw::translate(this->getPosition());
@@ -162,9 +164,11 @@ namespace Engine {
 
                 this->beforeDraw(only_border);
 
-                this->mesh->draw(this->background, only_border);
+                if (mesh) {
+                    mesh->draw(only_border);
+                }
 
-                for (const auto &child : this->children) {
+                for (const auto &child : this->getChildren()) {
                     child->draw(only_border);
                 }
 
