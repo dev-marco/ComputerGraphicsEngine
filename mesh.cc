@@ -2,7 +2,7 @@
 
 namespace Engine {
 
-    float_max_t Mesh::distanceRays (
+    float_max_t Mesh::distanceRayRay (
         const Vec<3> &ray_1_start,
         const Vec<3> &ray_1_end,
         const Vec<3> &ray_2_start,
@@ -59,7 +59,7 @@ namespace Engine {
         return ray_start.distance(ray_end);
     }
 
-    bool Mesh::collisionRectangles (
+    bool Mesh::intersectionRectangleRectangle (
         const Vec<3> &rect_1_top_left,
         const Vec<3> &rect_1_bottom_left,
         const Vec<3> &rect_1_bottom_right,
@@ -110,14 +110,14 @@ namespace Engine {
 
             for (unsigned i = 0; i < rect_1_edges.size(); ++i) {
                 for (unsigned j = 0; j < rect_2_edges.size(); ++j) {
-                    if (distanceRays(rect_1_edges[i][0], rect_1_edges[i][1], rect_2_edges[j][0], rect_2_edges[j][1], near_point, ray_end) <= EPSILON) {
+                    if (distanceRayRay(rect_1_edges[i][0], rect_1_edges[i][1], rect_2_edges[j][0], rect_2_edges[j][1], near_point, ray_end) <= EPSILON) {
                         return true;
                     }
                 }
             }
 
             for (const auto &rect_2_vertex : { rect_2_top_left, rect_2_bottom_left, rect_2_bottom_right, rect_2_top_right }) {
-                if (collisionPointRectangle2D(rect_1_top_left, rect_1_bottom_left, rect_1_bottom_right, rect_1_top_right, rect_2_vertex)) {
+                if (intersectionPointRectangle2D(rect_1_top_left, rect_1_bottom_left, rect_1_bottom_right, rect_1_top_right, rect_2_vertex)) {
                     near_point = rect_2_vertex;
                     return true;
                 }

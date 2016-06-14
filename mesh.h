@@ -205,8 +205,92 @@ namespace Engine {
 
 // -----------------------------------------------------------------------------
 
+        // NOTE Real-Time Collision Detection
+        static float_max_t distanceRayRay (
+            const Vec<3> &ray_1_start,
+            const Vec<3> &ray_1_end,
+            const Vec<3> &ray_2_start,
+            const Vec<3> &ray_2_end,
+            Vec<3> &ray_start,
+            Vec<3> &ray_end
+        );
+
+// -----------------------------------------------------------------------------
+
+        inline static bool intersectionPointTriangle2D (
+            const Vec<3> &point,
+            const Vec<3> &tri_point_1,
+            const Vec<3> &tri_point_2,
+            const Vec<3> &tri_point_3
+        ) {
+            return intersectionPointConvexPolygon2D(point, edgesTriangle(tri_point_1, tri_point_2, tri_point_3));
+        };
+
+        inline static bool intersectionPointRectangle2D (
+            const Vec<3> &point,
+            const Vec<3> &rect_top_left,
+            const Vec<3> &rect_bottom_left,
+            const Vec<3> &rect_bottom_right,
+            const Vec<3> &rect_top_right
+        ) {
+            return intersectionPointConvexPolygon2D(point, edgesRectangle(rect_top_left, rect_bottom_left, rect_bottom_right, rect_top_right));
+        }
+
+// -----------------------------------------------------------------------------
+
+        inline static bool intersectionRaySphere (
+            const Vec<3> &ray_start,
+            const Vec<3> &ray_end,
+            const Vec<3> &circle_center,
+            const float_max_t circle_radius,
+            Vec<3> &near_point
+        ) { return distancePointRay(circle_center, ray_start, ray_end, near_point) <= circle_radius; }
+
+        // NOTE Real-Time Collision Detection : 180
+        inline static bool intersectionRayBox (
+            const Vec<3> &ray_start,
+            const Vec<3> &ray_end,
+            const Vec<3> &box_min,
+            const Vec<3> &box_max,
+            Vec<3> &near_point,
+            float_max_t tmin = -std::numeric_limits<float_max_t>::infinity(),
+            float_max_t tmax = std::numeric_limits<float_max_t>::infinity()
+        ) {
+            const Vec<3> diff = ray_end - ray_start;
+            for (unsigned i = 0; i < 3; ++i) {
+                if (std::abs(diff[i]) < EPSILON) {
+                    if (ray_start[i] < box_min[i] || ray_start[i] > box_max[i]) {
+                        return 0;
+                    }
+                } else {
+                    float_max_t
+                        ood = 1.0 / diff[i],
+                        t1 = (box_min[i] - ray_start[i]) * ood,
+                        t2 = (box_max[i] - ray_start[i]) * ood;
+                    if (t1 > t2) {
+                        std::swap(t1, t2);
+                    }
+                    if (t1 > tmin) {
+                        tmin = t1;
+                    }
+                    if (t2 > tmax) {
+                        tmax = t2;
+                    }
+                    if (tmin > tmax) {
+                        return false;
+                    }
+                }
+            }
+            near_point = ray_start + diff * tmin;
+            return true;
+        }
+
+        // NOTE Real-Time Collision Detection : 236
+
+// -----------------------------------------------------------------------------
+
         template <typename T, typename = typename T::iterator>
-        static constexpr bool collisionPointConvexPolygon2D (
+        static constexpr bool intersectionPointConvexPolygon2D (
             const Vec<3> &point,
             T edges_ccw
         ) {
@@ -222,26 +306,7 @@ namespace Engine {
             return true;
         }
 
-        inline static bool collisionPointTriangle2D (
-            const Vec<3> &point,
-            const Vec<3> &tri_point_1,
-            const Vec<3> &tri_point_2,
-            const Vec<3> &tri_point_3
-        ) {
-            return collisionPointConvexPolygon2D(point, edgesTriangle(tri_point_1, tri_point_2, tri_point_3));
-        };
-
-        inline static bool collisionPointRectangle2D (
-            const Vec<3> &point,
-            const Vec<3> &rect_top_left,
-            const Vec<3> &rect_bottom_left,
-            const Vec<3> &rect_bottom_right,
-            const Vec<3> &rect_top_right
-        ) {
-            return collisionPointConvexPolygon2D(point, edgesRectangle(rect_top_left, rect_bottom_left, rect_bottom_right, rect_top_right));
-        }
-
-        inline static bool collisionSpheres (
+        inline static bool intersectionSphereSphere (
             const Vec<3> &position_1,
             const float_max_t radius_1,
             const Vec<3> &position_2,
@@ -251,16 +316,7 @@ namespace Engine {
             return position_1.distance2(position_2) <= (center_distance * center_distance);
         }
 
-        static float_max_t distanceRays (
-            const Vec<3> &ray_1_start,
-            const Vec<3> &ray_1_end,
-            const Vec<3> &ray_2_start,
-            const Vec<3> &ray_2_end,
-            Vec<3> &ray_start,
-            Vec<3> &ray_end
-        );
-
-        static bool collisionRectangles (
+        static bool intersectionRectangleRectangle (
             const Vec<3> &rect_1_top_left,
             const Vec<3> &rect_1_bottom_left,
             const Vec<3> &rect_1_bottom_right,
@@ -274,15 +330,7 @@ namespace Engine {
             Vec<3> &near_point
         );
 
-        inline static bool collisionRaySphere (
-            const Vec<3> &ray_start,
-            const Vec<3> &ray_end,
-            const Vec<3> &circle_center,
-            const float_max_t circle_radius,
-            Vec<3> &near_point
-        ) { return distancePointRay(circle_center, ray_start, ray_end, near_point) <= circle_radius; }
-
-        inline static bool collisionRectangleCircle2D (
+        inline static bool intersectionRectangleCircle2D (
             const Vec<3> &rect_top_left,
             const Vec<3> &rect_bottom_left,
             const Vec<3> &rect_bottom_right,
@@ -292,14 +340,14 @@ namespace Engine {
             Vec<3> &near_point
         ) {
 
-            if (collisionRaySphere(rect_top_left, rect_top_right, circle_center, circle_radius, near_point) ||
-                collisionRaySphere(rect_top_right, rect_bottom_right, circle_center, circle_radius, near_point) ||
-                collisionRaySphere(rect_bottom_left, rect_bottom_right, circle_center, circle_radius, near_point) ||
-                collisionRaySphere(rect_top_left, rect_bottom_left, circle_center, circle_radius, near_point)) {
+            if (intersectionRaySphere(rect_top_left, rect_top_right, circle_center, circle_radius, near_point) ||
+                intersectionRaySphere(rect_top_right, rect_bottom_right, circle_center, circle_radius, near_point) ||
+                intersectionRaySphere(rect_bottom_left, rect_bottom_right, circle_center, circle_radius, near_point) ||
+                intersectionRaySphere(rect_top_left, rect_bottom_left, circle_center, circle_radius, near_point)) {
                 return true;
             }
 
-            if (collisionPointRectangle2D(rect_top_left, rect_bottom_left, rect_bottom_right, rect_top_right, circle_center)) {
+            if (intersectionPointRectangle2D(rect_top_left, rect_bottom_left, rect_bottom_right, rect_top_right, circle_center)) {
                 near_point = circle_center;
                 return true;
             }
@@ -384,10 +432,20 @@ namespace Engine {
         inline virtual void setPosition (const Vec<3> &_position) { this->position = _position; }
 
         inline Background *getBackground (void) const { return this->background; }
+        inline void setBackground (Background *_background) { this->background = _background; }
 
         inline const std::vector<Mesh *> &getChildren (void) const { return this->children; }
         inline virtual void addChild (Mesh *child) { this->children.push_back(child); }
 
+        virtual void debugInfo (std::ostream &out, const std::string shift = "") const {
+            out << shift << "Mesh Type: " << this->getType() << std::endl;
+            out << shift << "Mesh Position: " << this->getPosition() << std::endl;
+            out << shift << "Mesh Children:" << std::endl;
+            for (const auto &child : this->getChildren()) {
+                child->debugInfo(out, shift + ' ');
+            }
+            out << std::endl;
+        }
         inline virtual const std::string getType (void) const { return "mesh"; }
     };
 
@@ -461,7 +519,7 @@ namespace Engine {
 
             if (other->getType() == "rectangle2d") {
                 const Rectangle2D *rect = static_cast<const Rectangle2D *>(other);
-                return Mesh::collisionRectangles(
+                return Mesh::intersectionRectangleRectangle(
                     my_offset + this->getTopLeftPosition(),
                     my_offset + this->getBottomLeftPosition(),
                     my_offset + this->getBottomRightPosition(),
@@ -586,13 +644,13 @@ namespace Engine {
 
             if (other->getType() == "polygon2d" || other->getType() == "sphere2d") {
                 const Polygon2D *poly = static_cast<const Polygon2D *>(other);
-                if (Mesh::collisionSpheres(my_offset + this->getPosition(), this->getRadius(), other_offset + other->getPosition(), poly->getRadius())) {
+                if (Mesh::intersectionSphereSphere(my_offset + this->getPosition(), this->getRadius(), other_offset + other->getPosition(), poly->getRadius())) {
                     point = (this->getPosition() + other->getPosition()) * 0.5;
                     return true;
                 }
             } else if (other->getType() == "rectangle2d") {
                 const Rectangle2D *rect = static_cast<const Rectangle2D *>(other);
-                return Mesh::collisionRectangleCircle2D(
+                return Mesh::intersectionRectangleCircle2D(
                     other_offset + rect->getTopLeftPosition(),
                     other_offset + rect->getBottomLeftPosition(),
                     other_offset + rect->getBottomRightPosition(),
