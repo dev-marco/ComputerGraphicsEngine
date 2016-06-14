@@ -44,7 +44,7 @@ namespace Engine {
         }
 
         inline Object (
-            const Vec<3> &_position = Vec<3>::zero,
+            const Vec<3> &_position = Vec<3>::origin,
             const Quaternion &_orientation = Quaternion::identity,
             bool _display = true,
             Mesh *_mesh = nullptr,
@@ -75,17 +75,48 @@ namespace Engine {
 
         inline bool isMoving (void) const { return this->getSpeed(); }
 
-        inline void addChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = this, this->children.push_back(obj), this->onAddChild(obj); } }
-        inline void removeChild (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { obj->parent = nullptr, this->children.remove(obj), this->onRemoveChild(obj); } }
+        inline void addChild (Object *obj) {
+            if (Object::isValid(this) && Object::isValid(obj)) {
+                obj->parent = this;
+                obj->onSetParent(this);
+                this->children.push_back(obj);
+                this->onAddChild(obj);
+            }
+        }
+        inline void removeChild (Object *obj) {
+            if (Object::isValid(this)) {
+                if (Object::isValid(obj)) {
+                    obj->parent = nullptr;
+                    obj->onRemoveParent(this);
+                }
+                this->children.remove(obj);
+                this->onRemoveChild(obj);
+            }
+        }
 
-        inline void setParent (Object *obj) { if (Object::isValid(this) && Object::isValid(obj)) { this->parent->addChild(obj); } }
-        inline void removeParent (void) { if (Object::isValid(this) && Object::isValid(this->parent)) { this->parent->removeChild(this); } }
+        inline void setParent (Object *obj) {
+            if (Object::isValid(this) && Object::isValid(obj)) {
+                this->parent->addChild(obj);
+            }
+        }
+        inline void removeParent (void) {
+            if (Object::isValid(this)) {
+                if (Object::isValid(this->parent)) {
+                    this->parent->removeChild(this);
+                } else {
+                    Object *parent = this->parent;
+                    this->parent = nullptr;
+                    this->onRemoveParent(parent);
+                }
+            }
+        }
         inline Object *getParent (void) const { return this->parent; }
 
         inline const std::list<Object *> &getChildren (void) const { return this->children; }
 
         virtual void move(float_max_t delta_time, bool collision_detect) final;
         virtual void update(float_max_t now, float_max_t delta_time, unsigned tick, bool collision_detect) final;
+        virtual void alwaysUpdate(float_max_t now, float_max_t delta_time, unsigned tick, bool collision_detect) final;
         virtual void draw(bool only_border = false) const final;
 
         inline Shader::Program *getShader (void) const { return this->shader; }
@@ -140,10 +171,14 @@ namespace Engine {
         virtual inline void afterDestroy () {}
         virtual inline void beforeUpdate (float_max_t now, float_max_t delta_time, unsigned tick) {}
         virtual inline void afterUpdate (float_max_t now, float_max_t delta_time, unsigned tick) {}
+        virtual inline void beforeAlwaysUpdate (float_max_t now, float_max_t delta_time, unsigned tick) {}
+        virtual inline void afterAlwaysUpdate (float_max_t now, float_max_t delta_time, unsigned tick) {}
         virtual inline void beforeDraw (bool only_border) const {}
         virtual inline void afterDraw (bool only_border) const {}
         virtual inline void onAddChild (Object *child) {}
         virtual inline void onRemoveChild (Object *child) {}
+        virtual inline void onSetParent (Object *parent) {}
+        virtual inline void onRemoveParent (Object *parent) {}
 
         virtual void debugInfo (std::ostream &out, const std::string shift = "") const;
 
