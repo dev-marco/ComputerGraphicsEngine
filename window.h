@@ -105,17 +105,14 @@ namespace Engine {
             float_max_t interval,
             bool pauseable = false
         ) {
-            if (interval > 0) {
-                unsigned id = this->timeout_counter;
-                this->timeout_counter++;
-                if (this->isPaused() && pauseable) {
-                    this->timeouts[id] = std::forward_as_tuple(func, interval, interval, true, pauseable);
-                } else {
-                    this->timeouts[id] = std::forward_as_tuple(func, glfwGetTime() + interval, interval, true, pauseable);
-                }
-                return id;
+            unsigned id = this->timeout_counter;
+            this->timeout_counter++;
+            if (this->isPaused() && pauseable) {
+                this->timeouts[id] = std::forward_as_tuple(func, interval, interval, true, pauseable);
+            } else {
+                this->timeouts[id] = std::forward_as_tuple(func, glfwGetTime() + interval, interval, true, pauseable);
             }
-            return 0;
+            return id;
         }
 
         inline void clearTimeout (unsigned id) {
