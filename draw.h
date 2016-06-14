@@ -78,6 +78,28 @@ namespace Engine {
 
     public:
 
+        // TODO create camera
+        inline static void lookAt (const Engine::Vec<3> &eye_pos, const Engine::Vec<3> &look_dir, const Engine::Vec<3> &up_vec) {
+
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+
+            gluLookAt(
+                eye_pos[0], eye_pos[1], eye_pos[2],
+                look_dir[0], look_dir[1], look_dir[2],
+                up_vec[0], up_vec[1], up_vec[2]
+            );
+        }
+
+        inline static void perspective (float_max_t fovy, float_max_t aspect, float_max_t zNear = 1.0, float_max_t zFar = 100.0) {
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            gluPerspective(fovy, aspect, zNear, zFar);
+            glMatrixMode(GL_MODELVIEW);
+        }
+
+// -----------------------------------------------------------------------------
+
         inline static void begin (Background *_background = nullptr) {
             // TODO lock
             background = _background;
