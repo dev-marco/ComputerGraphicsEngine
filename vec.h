@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <array>
 #include <vector>
+#include <list>
 #include <iterator>
 #include <algorithm>
 #include <functional>
@@ -124,6 +125,19 @@ namespace Engine {
 
         typedef typename std::array<TYPE, SIZE>::iterator iterator;
         typedef typename std::array<TYPE, SIZE>::const_iterator const_iterator;
+
+        static Vec<SIZE, TYPE> average (std::list<Vec<SIZE, TYPE>> vecs) {
+            if (!vecs.empty()) {
+                const Vec<SIZE, TYPE> first = std::move(vecs.front());
+                Vec<SIZE, TYPE> result = first;
+                vecs.pop_front();
+                for (auto &vec : vecs) {
+                    result += vec;
+                }
+                return result / vecs.size();
+            }
+            return Vec<SIZE, TYPE>::zero;
+        }
 
         inline static const Vec<SIZE, TYPE> &axis (unsigned position) {
             static std::array<Vec<SIZE, TYPE>, SIZE> axes;
@@ -493,7 +507,10 @@ namespace Engine {
         friend Vec<SIZE, TYPE> operator + (const Vec<SIZE, TYPE> &vec, const CONSTRUCTIBLE &other) { return vec.mapped([ other ] (const TYPE &a) { return _add_out(a, other); }); }
         ENGINE_VEC_TEMPLATE_IS_ITERATIVE(TYPE)
         Vec<SIZE, TYPE> operator + (const ITERATIVE &other) const { return this->mapped(_add_out, std::begin(other), std::end(other)); }
-        Vec<SIZE, TYPE> operator + (const std::initializer_list<TYPE> &other) const { return this->mapped(_add_out, std::begin(other), std::end(other)); }
+        // ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        // friend Vec<SIZE, TYPE> operator + (const Vec<SIZE, TYPE> &vec, const std::initializer_list<CONSTRUCTIBLE> &other) { return vec.mapped(_add_out, std::begin(other), std::end(other)); }
+        // ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
+        // friend Vec<SIZE, TYPE> operator + (const std::initializer_list<CONSTRUCTIBLE> &other, const Vec<SIZE, TYPE> &vec) { return vec.mapped(_add_out, std::begin(other), std::end(other)); }
 
 
         ENGINE_VEC_TEMPLATE_IS_CONSTRUCTIBLE(TYPE)
