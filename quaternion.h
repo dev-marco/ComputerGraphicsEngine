@@ -50,7 +50,7 @@ namespace Engine {
         static Quaternion eulerZYX (float_max_t Z, float_max_t Y, float_max_t X) {
 
             const float_max_t
-                hz = Z / 2.0, hy = Y / 2.0, hx = X / 2.0,
+                hz = Z * 0.5, hy = Y * 0.5, hx = X * 0.5,
                 cz = std::cos(hz), sz = std::sin(hz),
                 cy = std::cos(hy), sy = std::sin(hy),
                 cx = std::cos(hx), sx = std::sin(hx),
@@ -66,7 +66,7 @@ namespace Engine {
 
         static Quaternion average (std::list<Quaternion> quaternions) {
             if (!quaternions.empty()) {
-                const Quaternion first = quaternions.front();
+                const Quaternion first = std::move(quaternions.front());
                 Quaternion result = first;
                 quaternions.pop_front();
                 for (auto &quaternion : quaternions) {
@@ -76,7 +76,7 @@ namespace Engine {
                         result += quaternion;
                     }
                 }
-                return Quaternion(result / static_cast<float_max_t>(quaternions.size()));
+                return Quaternion(result / quaternions.size());
             }
             return Quaternion::identity;
         }
@@ -149,6 +149,26 @@ namespace Engine {
                 vec[2] = pivot[2] + (diff[0] * matrix[2]) + (diff[1] * matrix[6]) + (diff[1] * matrix[10]);
             }
             return vec;
+        }
+
+        Quaternion operator * (const Quaternion &other) const {
+            return Quaternion(
+                (this->store[3] * other.store[0]) + (this->store[0] * other.store[3]) + (this->store[1] * other.store[2]) - (this->store[2] * other.store[1]),
+                (this->store[3] * other.store[1]) - (this->store[0] * other.store[2]) + (this->store[1] * other.store[3]) + (this->store[2] * other.store[0]),
+                (this->store[3] * other.store[2]) + (this->store[0] * other.store[1]) - (this->store[1] * other.store[0]) + (this->store[2] * other.store[3]),
+                (this->store[3] * other.store[3]) - (this->store[0] * other.store[0]) - (this->store[1] * other.store[1]) - (this->store[2] * other.store[2])
+            );
+        }
+
+        Quaternion &operator *= (const Quaternion &other) {
+            this->store = {
+                (this->store[3] * other.store[0]) + (this->store[0] * other.store[3]) + (this->store[1] * other.store[2]) - (this->store[2] * other.store[1]),
+                (this->store[3] * other.store[1]) - (this->store[0] * other.store[2]) + (this->store[1] * other.store[3]) + (this->store[2] * other.store[0]),
+                (this->store[3] * other.store[2]) + (this->store[0] * other.store[1]) - (this->store[1] * other.store[0]) + (this->store[2] * other.store[3]),
+                (this->store[3] * other.store[3]) - (this->store[0] * other.store[0]) - (this->store[1] * other.store[1]) - (this->store[2] * other.store[2])
+            };
+            this->normalize();
+            return *this;
         }
 
 // -----------------------------------------------------------------------------
