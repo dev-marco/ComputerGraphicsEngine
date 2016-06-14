@@ -148,6 +148,21 @@ namespace Engine {
         }
     }
 
+    void Object::alwaysUpdate (float_max_t now, float_max_t delta_time, unsigned tick, bool collision_detect) {
+
+        if (Object::isValid(this)) {
+
+            this->beforeAlwaysUpdate(now, delta_time, tick);
+
+            for (auto &child : this->children) {
+                child->alwaysUpdate(now, delta_time, tick, collision_detect);
+            }
+
+            this->afterAlwaysUpdate(now, delta_time, tick);
+        }
+
+    }
+
     void Object::draw (bool only_border) const {
 
         if (Object::isValid(this)) {
@@ -183,25 +198,24 @@ namespace Engine {
 
     void Object::debugInfo (std::ostream &out, const std::string shift) const {
         if (Object::isValid(this)) {
-            out << shift << "Type: " << this->getType() << std::endl;
-            out << shift << "Position: ";
-            for (const auto &v : this->getPosition()) {
-                out << v << ' ';
-            }
-            out << std::endl;
 
-            out << shift << "Speed: ";
-            for (const auto &v : this->getSpeed()) {
-                out << v << ' ';
+            Engine::Mesh *mesh = this->getMesh();
+            std::string next_shift = shift + ' ';
+
+            out << shift << "Type: " << this->getType() << std::endl;
+            out << shift << "Position: " << this->getPosition() << std::endl;
+
+            if (mesh) {
+                out << shift << "Mesh:" << std::endl;
+                mesh->debugInfo(out, next_shift);
             }
+
+            out << shift << "Speed: " << this->getSpeed() << std::endl;
             if (!this->getChildren().empty()) {
-                std::string next_shift = shift + ' ';
                 out << shift << "Children:" << std::endl;
                 for (auto &child : this->getChildren()) {
                     child->debugInfo(out, next_shift);
                 }
-            } else {
-                out << std::endl;
             }
             out << std::endl;
         }

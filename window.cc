@@ -59,6 +59,9 @@ namespace Engine {
 
         first_time = now;
 
+        this->object_root.alwaysUpdate(now, delta_time, this->tick_counter, true);
+        this->gui_root.alwaysUpdate(now, delta_time, this->tick_counter, true);
+
         if (!this->isPaused()) {
 
             this->object_root.update(now, delta_time, this->tick_counter, true);
