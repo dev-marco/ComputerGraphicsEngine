@@ -9,9 +9,9 @@
 #include <cmath>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include "defaults.h"
-#include "vec.h"
-#include "quaternion.h"
+#include "spatial/defaults.h"
+#include "spatial/vec.h"
+#include "spatial/quaternion.h"
 #include "draw.h"
 #include "background.h"
 
@@ -30,10 +30,10 @@ namespace Engine {
             return value;
         }
 
-        inline static std::array<std::array<Vec<3>, 2>, 3> edgesTriangle (
-            const Vec<3> &tri_point_1,
-            const Vec<3> &tri_point_2,
-            const Vec<3> &tri_point_3
+        inline static std::array<std::array<Spatial::Vec<3>, 2>, 3> edgesTriangle (
+            const Spatial::Vec<3> &tri_point_1,
+            const Spatial::Vec<3> &tri_point_2,
+            const Spatial::Vec<3> &tri_point_3
         ) {
             return {{
                 { tri_point_1, tri_point_2 },
@@ -42,11 +42,11 @@ namespace Engine {
             }};
         }
 
-        inline static std::array<std::array<Vec<3>, 2>, 4> edgesRectangle (
-            const Vec<3> &rect_top_left,
-            const Vec<3> &rect_bottom_left,
-            const Vec<3> &rect_bottom_right,
-            const Vec<3> &rect_top_right
+        inline static std::array<std::array<Spatial::Vec<3>, 2>, 4> edgesRectangle (
+            const Spatial::Vec<3> &rect_top_left,
+            const Spatial::Vec<3> &rect_bottom_left,
+            const Spatial::Vec<3> &rect_bottom_right,
+            const Spatial::Vec<3> &rect_top_right
         ) {
             return {{
                 { rect_top_left, rect_bottom_left },
@@ -57,9 +57,9 @@ namespace Engine {
         }
 
         inline static float_max_t areaTriangle (
-            const Vec<3> &tri_point_1,
-            const Vec<3> &tri_point_2,
-            const Vec<3> &tri_point_3
+            const Spatial::Vec<3> &tri_point_1,
+            const Spatial::Vec<3> &tri_point_2,
+            const Spatial::Vec<3> &tri_point_3
         ) {
             if (tri_point_1[2] == tri_point_2[2] && tri_point_2[2] == tri_point_3[2]) {
                 return std::abs((
@@ -78,9 +78,9 @@ namespace Engine {
         }
 
         inline static float_max_t areaRectangle (
-            const Vec<3> &rect_top_left,
-            const Vec<3> &rect_bottom_left,
-            const Vec<3> &rect_bottom_right
+            const Spatial::Vec<3> &rect_top_left,
+            const Spatial::Vec<3> &rect_bottom_left,
+            const Spatial::Vec<3> &rect_bottom_right
         ) {
             return std::sqrt((rect_bottom_left - rect_top_left).length2() * (rect_bottom_right - rect_bottom_left).length2());
         }
@@ -88,12 +88,12 @@ namespace Engine {
 // -----------------------------------------------------------------------------
 
         static float_max_t distancePointRay (
-            const Vec<3> &point,
-            const Vec<3> &ray_start,
-            const Vec<3> &ray_end,
-            Vec<3> &near_point
+            const Spatial::Vec<3> &point,
+            const Spatial::Vec<3> &ray_start,
+            const Spatial::Vec<3> &ray_end,
+            Spatial::Vec<3> &near_point
         ) {
-            const Vec<3> delta_ray = ray_end - ray_start;
+            const Spatial::Vec<3> delta_ray = ray_end - ray_start;
             const float_max_t length_2 = delta_ray.length2();
 
             if (length_2 == 0.0) {
@@ -107,8 +107,8 @@ namespace Engine {
         }
 
         static float_max_t distancePointSphere (
-            const Vec<3> &point,
-            const Vec<3> &sphere_center,
+            const Spatial::Vec<3> &point,
+            const Spatial::Vec<3> &sphere_center,
             float_max_t sphere_radius
         ) {
             float_max_t d = point.distance(sphere_center) - sphere_radius;
@@ -120,12 +120,12 @@ namespace Engine {
 
         // NOTE http://liris.cnrs.fr/Documents/Liris-1297.pdf
         static float_max_t distancePointCylinder (
-            const Vec<3> &point,
-            const Vec<3> &cylinder_start,
-            const Vec<3> &cylinder_end,
+            const Spatial::Vec<3> &point,
+            const Spatial::Vec<3> &cylinder_start,
+            const Spatial::Vec<3> &cylinder_end,
             float_max_t cylinder_radius
         ) {
-            const Vec<3>
+            const Spatial::Vec<3>
                 diff = cylinder_end - cylinder_start,
                 c = cylinder_start.lerped(cylinder_end, 0.5);
             float_max_t
@@ -151,10 +151,10 @@ namespace Engine {
         }
 
         static float_max_t distancePointPlane (
-            const Vec<3> &point,
-            const Vec<3> &plane_normal,
-            const Vec<3> &plane_point,
-            Vec<3> &near_point
+            const Spatial::Vec<3> &point,
+            const Spatial::Vec<3> &plane_normal,
+            const Spatial::Vec<3> &plane_point,
+            Spatial::Vec<3> &near_point
         ) {
             near_point = point + plane_normal * ((plane_normal.dot(plane_point) - plane_normal.dot(point)) / plane_normal.length2());
             return near_point.distance(point);
@@ -163,9 +163,9 @@ namespace Engine {
 // -----------------------------------------------------------------------------
 
         static float_max_t distanceSphereSphere (
-            const Vec<3> &center_1,
+            const Spatial::Vec<3> &center_1,
             float_max_t radius_1,
-            const Vec<3> &center_2,
+            const Spatial::Vec<3> &center_2,
             float_max_t radius_2
         ) {
             float_max_t d = distancePointSphere(center_1, center_2, radius_2) - radius_1;
@@ -176,10 +176,10 @@ namespace Engine {
         }
 
         static float_max_t distanceSphereCylinder (
-            const Vec<3> &sphere_center,
+            const Spatial::Vec<3> &sphere_center,
             float_max_t sphere_radius,
-            const Vec<3> &cylinder_start,
-            const Vec<3> &cylinder_end,
+            const Spatial::Vec<3> &cylinder_start,
+            const Spatial::Vec<3> &cylinder_end,
             float_max_t cylinder_radius
         ) {
             float_max_t d = distancePointCylinder(sphere_center, cylinder_start, cylinder_end, cylinder_radius) - sphere_radius;
@@ -190,11 +190,11 @@ namespace Engine {
         }
 
         static float_max_t distanceSpherePlane (
-            const Vec<3> &sphere_center,
+            const Spatial::Vec<3> &sphere_center,
             float_max_t sphere_radius,
-            const Vec<3> &plane_normal,
-            const Vec<3> &plane_point,
-            Vec<3> &near_point
+            const Spatial::Vec<3> &plane_normal,
+            const Spatial::Vec<3> &plane_point,
+            Spatial::Vec<3> &near_point
         ) {
             float_max_t d = distancePointPlane(sphere_center, plane_normal, plane_point, near_point) - sphere_radius;
             if (d > 0.0) {
@@ -207,31 +207,31 @@ namespace Engine {
 
         // NOTE Real-Time Collision Detection
         static float_max_t distanceRayRay (
-            const Vec<3> &ray_1_start,
-            const Vec<3> &ray_1_end,
-            const Vec<3> &ray_2_start,
-            const Vec<3> &ray_2_end,
-            Vec<3> &ray_start,
-            Vec<3> &ray_end
+            const Spatial::Vec<3> &ray_1_start,
+            const Spatial::Vec<3> &ray_1_end,
+            const Spatial::Vec<3> &ray_2_start,
+            const Spatial::Vec<3> &ray_2_end,
+            Spatial::Vec<3> &ray_start,
+            Spatial::Vec<3> &ray_end
         );
 
 // -----------------------------------------------------------------------------
 
         inline static bool intersectionPointTriangle2D (
-            const Vec<3> &point,
-            const Vec<3> &tri_point_1,
-            const Vec<3> &tri_point_2,
-            const Vec<3> &tri_point_3
+            const Spatial::Vec<3> &point,
+            const Spatial::Vec<3> &tri_point_1,
+            const Spatial::Vec<3> &tri_point_2,
+            const Spatial::Vec<3> &tri_point_3
         ) {
             return intersectionPointConvexPolygon2D(point, edgesTriangle(tri_point_1, tri_point_2, tri_point_3));
         };
 
         inline static bool intersectionPointRectangle2D (
-            const Vec<3> &point,
-            const Vec<3> &rect_top_left,
-            const Vec<3> &rect_bottom_left,
-            const Vec<3> &rect_bottom_right,
-            const Vec<3> &rect_top_right
+            const Spatial::Vec<3> &point,
+            const Spatial::Vec<3> &rect_top_left,
+            const Spatial::Vec<3> &rect_bottom_left,
+            const Spatial::Vec<3> &rect_bottom_right,
+            const Spatial::Vec<3> &rect_top_right
         ) {
             return intersectionPointConvexPolygon2D(point, edgesRectangle(rect_top_left, rect_bottom_left, rect_bottom_right, rect_top_right));
         }
@@ -239,26 +239,26 @@ namespace Engine {
 // -----------------------------------------------------------------------------
 
         inline static bool intersectionRaySphere (
-            const Vec<3> &ray_start,
-            const Vec<3> &ray_end,
-            const Vec<3> &circle_center,
+            const Spatial::Vec<3> &ray_start,
+            const Spatial::Vec<3> &ray_end,
+            const Spatial::Vec<3> &circle_center,
             const float_max_t circle_radius,
-            Vec<3> &near_point
+            Spatial::Vec<3> &near_point
         ) { return distancePointRay(circle_center, ray_start, ray_end, near_point) <= circle_radius; }
 
         // NOTE Real-Time Collision Detection : 180
         inline static bool intersectionRayBox (
-            const Vec<3> &ray_start,
-            const Vec<3> &ray_end,
-            const Vec<3> &box_min,
-            const Vec<3> &box_max,
-            Vec<3> &near_point,
+            const Spatial::Vec<3> &ray_start,
+            const Spatial::Vec<3> &ray_end,
+            const Spatial::Vec<3> &box_min,
+            const Spatial::Vec<3> &box_max,
+            Spatial::Vec<3> &near_point,
             float_max_t tmin = -std::numeric_limits<float_max_t>::infinity(),
             float_max_t tmax = std::numeric_limits<float_max_t>::infinity()
         ) {
-            const Vec<3> diff = ray_end - ray_start;
+            const Spatial::Vec<3> diff = ray_end - ray_start;
             for (unsigned i = 0; i < 3; ++i) {
-                if (std::abs(diff[i]) < EPSILON) {
+                if (std::abs(diff[i]) < Spatial::EPSILON) {
                     if (ray_start[i] < box_min[i] || ray_start[i] > box_max[i]) {
                         return 0;
                     }
@@ -291,10 +291,10 @@ namespace Engine {
 
         template <typename T, typename = typename T::iterator>
         static constexpr bool intersectionPointConvexPolygon2D (
-            const Vec<3> &point,
+            const Spatial::Vec<3> &point,
             T edges_ccw
         ) {
-            for (const std::array<Vec<3>, 2> &edge : edges_ccw) {
+            for (const std::array<Spatial::Vec<3>, 2> &edge : edges_ccw) {
                 const float_max_t
                     A = edge[0][1] - edge[1][1],
                     B = edge[1][0] - edge[0][0];
@@ -307,9 +307,9 @@ namespace Engine {
         }
 
         inline static bool intersectionSphereSphere (
-            const Vec<3> &position_1,
+            const Spatial::Vec<3> &position_1,
             const float_max_t radius_1,
-            const Vec<3> &position_2,
+            const Spatial::Vec<3> &position_2,
             const float_max_t radius_2
         ) {
             const float_max_t center_distance = radius_1 + radius_2;
@@ -317,27 +317,27 @@ namespace Engine {
         }
 
         static bool intersectionRectangleRectangle (
-            const Vec<3> &rect_1_top_left,
-            const Vec<3> &rect_1_bottom_left,
-            const Vec<3> &rect_1_bottom_right,
-            const Vec<3> &rect_1_top_right,
-            const Quaternion &rect_1_orientation,
-            const Vec<3> &rect_2_top_left,
-            const Vec<3> &rect_2_bottom_left,
-            const Vec<3> &rect_2_bottom_right,
-            const Vec<3> &rect_2_top_right,
-            const Quaternion &rect_2_orientation,
-            Vec<3> &near_point
+            const Spatial::Vec<3> &rect_1_top_left,
+            const Spatial::Vec<3> &rect_1_bottom_left,
+            const Spatial::Vec<3> &rect_1_bottom_right,
+            const Spatial::Vec<3> &rect_1_top_right,
+            const Spatial::Quaternion &rect_1_orientation,
+            const Spatial::Vec<3> &rect_2_top_left,
+            const Spatial::Vec<3> &rect_2_bottom_left,
+            const Spatial::Vec<3> &rect_2_bottom_right,
+            const Spatial::Vec<3> &rect_2_top_right,
+            const Spatial::Quaternion &rect_2_orientation,
+            Spatial::Vec<3> &near_point
         );
 
         inline static bool intersectionRectangleCircle2D (
-            const Vec<3> &rect_top_left,
-            const Vec<3> &rect_bottom_left,
-            const Vec<3> &rect_bottom_right,
-            const Vec<3> &rect_top_right,
-            const Vec<3> &circle_center,
+            const Spatial::Vec<3> &rect_top_left,
+            const Spatial::Vec<3> &rect_bottom_left,
+            const Spatial::Vec<3> &rect_bottom_right,
+            const Spatial::Vec<3> &rect_top_right,
+            const Spatial::Vec<3> &circle_center,
             const float_max_t circle_radius,
-            Vec<3> &near_point
+            Spatial::Vec<3> &near_point
         ) {
 
             if (intersectionRaySphere(rect_top_left, rect_top_right, circle_center, circle_radius, near_point) ||
@@ -356,14 +356,14 @@ namespace Engine {
         }
     private:
 
-            Vec<3> position;
-            Quaternion orientation;
+            Spatial::Vec<3> position;
+            Spatial::Quaternion orientation;
             std::vector<Mesh *> children;
             Background *background;
 
     public:
 
-        Mesh (const Vec<3> &_position = Vec<3>::zero, const Quaternion &_orientation = Quaternion::identity, Background *_background = nullptr) :
+        Mesh (const Spatial::Vec<3> &_position = Spatial::Vec<3>::zero, const Spatial::Quaternion &_orientation = Spatial::Quaternion::identity, Background *_background = nullptr) :
             position(_position), orientation(_orientation), background(_background) {};
 
         virtual ~Mesh () {}
@@ -371,15 +371,15 @@ namespace Engine {
         virtual void draw(const bool only_border = false) const final;
         inline virtual void _draw (const bool only_border) const {}
 
-        inline virtual Mesh *getCollisionSpace (const Vec<3> &speed) const { return nullptr; }
+        inline virtual Mesh *getCollisionSpace (const Spatial::Vec<3> &speed) const { return nullptr; }
 
         inline virtual bool detectCollision (
             Mesh *other,
-            const Vec<3> &my_offset,
-            const Vec<3> &my_speed,
-            const Vec<3> &other_offset,
-            const Vec<3> &other_speed,
-            Vec<3> &point,
+            const Spatial::Vec<3> &my_offset,
+            const Spatial::Vec<3> &my_speed,
+            const Spatial::Vec<3> &other_offset,
+            const Spatial::Vec<3> &other_speed,
+            Spatial::Vec<3> &point,
             const bool try_inverse = true
         ) final {
 
@@ -419,17 +419,17 @@ namespace Engine {
 
         inline virtual bool _detectCollision (
             const Mesh *other,
-            const Vec<3> &my_offset,
-            const Vec<3> &other_offset,
-            Vec<3> &point,
+            const Spatial::Vec<3> &my_offset,
+            const Spatial::Vec<3> &other_offset,
+            Spatial::Vec<3> &point,
             const bool try_inverse = true
         ) const { return false; }
 
-        inline const Quaternion &getOrientation (void) const { return this->orientation; }
-        inline virtual void setOrientation (const Quaternion &_orientation) { this->orientation = _orientation; }
+        inline const Spatial::Quaternion &getOrientation (void) const { return this->orientation; }
+        inline virtual void setOrientation (const Spatial::Quaternion &_orientation) { this->orientation = _orientation; }
 
-        inline const Vec<3> &getPosition () const { return this->position; }
-        inline virtual void setPosition (const Vec<3> &_position) { this->position = _position; }
+        inline const Spatial::Vec<3> &getPosition () const { return this->position; }
+        inline virtual void setPosition (const Spatial::Vec<3> &_position) { this->position = _position; }
 
         inline Background *getBackground (void) const { return this->background; }
         inline void setBackground (Background *_background) { this->background = _background; }
@@ -452,16 +452,16 @@ namespace Engine {
     class Rectangle2D : public Mesh {
 
         float_max_t width, height;
-        Vec<3> top_left, top_right, bottom_left, bottom_right;
+        Spatial::Vec<3> top_left, top_right, bottom_left, bottom_right;
 
     public:
-        inline Rectangle2D (const Vec<3> &_position, float_max_t _width, float_max_t _height, const Quaternion _orientation = Quaternion::identity, Background *_background = nullptr) :
+        inline Rectangle2D (const Spatial::Vec<3> &_position, float_max_t _width, float_max_t _height, const Spatial::Quaternion _orientation = Spatial::Quaternion::identity, Background *_background = nullptr) :
             Mesh(_position, _orientation, _background), width(_width), height(_height) {
             this->updatePositions();
         }
 
         inline void updatePositions (void) {
-            const Vec<3>
+            const Spatial::Vec<3>
                 top_left = this->getPosition(),
                 bottom_right = { top_left[0] + this->getWidth(), top_left[1] - this->getHeight(), top_left[2] };
 
@@ -476,13 +476,13 @@ namespace Engine {
 
         inline void setWidth (const float_max_t _width) { this->width = _width, this->updatePositions(); }
         inline void setHeight (const float_max_t _height) { this->height = _height, this->updatePositions(); }
-        inline void setOrientation (const Quaternion &_orientation) override { Mesh::setOrientation(_orientation), this->updatePositions(); }
-        inline void setPosition (const Vec<3> &_position) { Mesh::setPosition(_position), this->updatePositions(); }
+        inline void setOrientation (const Spatial::Quaternion &_orientation) override { Mesh::setOrientation(_orientation), this->updatePositions(); }
+        inline void setPosition (const Spatial::Vec<3> &_position) { Mesh::setPosition(_position), this->updatePositions(); }
 
-        inline const Vec<3> &getTopLeftPosition (void) const { return this->top_left; }
-        inline const Vec<3> &getTopRightPosition (void) const { return this->top_right; }
-        inline const Vec<3> &getBottomLeftPosition (void) const { return this->bottom_left; }
-        inline const Vec<3> &getBottomRightPosition (void) const { return this->bottom_right; }
+        inline const Spatial::Vec<3> &getTopLeftPosition (void) const { return this->top_left; }
+        inline const Spatial::Vec<3> &getTopRightPosition (void) const { return this->top_right; }
+        inline const Spatial::Vec<3> &getBottomLeftPosition (void) const { return this->bottom_left; }
+        inline const Spatial::Vec<3> &getBottomRightPosition (void) const { return this->bottom_right; }
 
         void _draw (const bool only_border) const override {
 
@@ -496,7 +496,7 @@ namespace Engine {
 
             Draw::begin(this->getBackground());
 
-            Draw::normal(Vec<3>::axisZ);
+            Draw::normal(Spatial::Vec<3>::axisZ);
 
             Draw::vertex(0.0, 0.0, 0.0);
             Draw::vertex(0.0, height, 0.0);
@@ -511,9 +511,9 @@ namespace Engine {
 
         inline bool _detectCollision (
             const Mesh *other,
-            const Vec<3> &my_offset,
-            const Vec<3> &other_offset,
-            Vec<3> &point,
+            const Spatial::Vec<3> &my_offset,
+            const Spatial::Vec<3> &other_offset,
+            Spatial::Vec<3> &point,
             const bool try_inverse = true
         ) const override {
 
@@ -545,20 +545,20 @@ namespace Engine {
 
         float_max_t radius, ratio_x, ratio_y;
         unsigned sides;
-        std::vector<Vec<2>> vertexes;
+        std::vector<Spatial::Vec<2>> vertexes;
 
         void updateVertexes (void) {
 
-            const Vec<3> position = this->getPosition();
+            const Spatial::Vec<3> position = this->getPosition();
             const float_max_t
                 sides = this->getSides(),
                 radius = this->getRadius(),
-                step = (PI * 2.0) / static_cast<float_max_t>(sides);
+                step = (Spatial::PI * 2.0) / static_cast<float_max_t>(sides);
             float_max_t ang = 0.0;
 
             this->vertexes.resize(sides);
 
-            for (Vec<2> &vertex : this->vertexes) {
+            for (Spatial::Vec<2> &vertex : this->vertexes) {
                 vertex[0] = position[0] + radius * std::cos(ang) * this->getRatioX();
                 vertex[1] = position[1] + radius * std::sin(ang) * this->getRatioY();
                 ang += step;
@@ -567,15 +567,15 @@ namespace Engine {
 
     public:
 
-        inline Polygon2D (const Vec<3> &_position, float_max_t _radius, unsigned _sides, float_max_t _ratio_x = 1.0, float_max_t _ratio_y = 1.0, const Quaternion _orientation = Quaternion::identity, Background *_background = nullptr) :
+        inline Polygon2D (const Spatial::Vec<3> &_position, float_max_t _radius, unsigned _sides, float_max_t _ratio_x = 1.0, float_max_t _ratio_y = 1.0, const Spatial::Quaternion _orientation = Spatial::Quaternion::identity, Background *_background = nullptr) :
             Mesh(_position, _orientation, _background), radius(_radius), ratio_x(_ratio_x), ratio_y(_ratio_y), sides(_sides) {
                 this->updateVertexes();
             };
 
         void _draw (const bool only_border) const override {
 
-            const Vec<3> position = this->getPosition();
-            const std::vector<Vec<2>> vertexes = this->getVertexes();
+            const Spatial::Vec<3> position = this->getPosition();
+            const std::vector<Spatial::Vec<2>> vertexes = this->getVertexes();
             const float_max_t sides = this->getSides();
 
             unsigned j = 0;
@@ -586,7 +586,7 @@ namespace Engine {
 
             Draw::begin(this->getBackground());
 
-            Draw::normal(Vec<3>::axisZ);
+            Draw::normal(Spatial::Vec<3>::axisZ);
 
             for (unsigned i = 1; i < sides; ++i, ++j) {
                 Draw::vertex(vertexes[j][0], vertexes[j][1], position[2]);
@@ -613,22 +613,22 @@ namespace Engine {
         inline unsigned getSides (void) const { return this->sides; }
         inline void setSides (const unsigned _sides) { this->sides = _sides, this->updateVertexes(); }
 
-        inline const std::vector<Vec<2>> &getVertexes (void) const { return this->vertexes; }
+        inline const std::vector<Spatial::Vec<2>> &getVertexes (void) const { return this->vertexes; }
 
-        Mesh *getCollisionSpace (const Vec<3> &speed) const override {
+        Mesh *getCollisionSpace (const Spatial::Vec<3> &speed) const override {
 
             if (speed.length2() > (this->getRadius() * this->getRadius())) {
                 const float_max_t speed_angle = std::atan2(speed[1], speed[0]);
 
-                const Vec<3>
+                const Spatial::Vec<3>
                     difference = {
-                        this->getRadius() * std::cos(speed_angle + DEG90),
-                        this->getRadius() * std::sin(speed_angle + DEG90),
+                        this->getRadius() * std::cos(speed_angle + Spatial::DEG90),
+                        this->getRadius() * std::sin(speed_angle + Spatial::DEG90),
                         0.0
                     },
                     top_position = this->getPosition() + difference;
 
-                return new Rectangle2D(top_position, speed.length(), this->getRadius() * 2.0, Quaternion::difference(speed.normalized(), Vec<3>::axisX));
+                return new Rectangle2D(top_position, speed.length(), this->getRadius() * 2.0, Spatial::Quaternion::difference(speed.normalized(), Spatial::Vec<3>::axisX));
             } else {
                 return nullptr;
             }
@@ -636,9 +636,9 @@ namespace Engine {
 
         bool _detectCollision (
             const Mesh *other,
-            const Vec<3> &my_offset,
-            const Vec<3> &other_offset,
-            Vec<3> &point,
+            const Spatial::Vec<3> &my_offset,
+            const Spatial::Vec<3> &other_offset,
+            Spatial::Vec<3> &point,
             const bool try_inverse = true
         ) const override {
 
@@ -670,33 +670,33 @@ namespace Engine {
 
     class Sphere2D : public Polygon2D {
     public:
-        Sphere2D (const Vec<3> &_position, float_max_t _radius, Background *_background) :
-            Polygon2D(_position, _radius, 20, 1.0, 1.0, Quaternion::identity, _background) {}
+        Sphere2D (const Spatial::Vec<3> &_position, float_max_t _radius, Background *_background) :
+            Polygon2D(_position, _radius, 20, 1.0, 1.0, Spatial::Quaternion::identity, _background) {}
 
         inline const std::string getType (void) const override { return "sphere2d"; }
     };
 
     class Ellipse2D : public Polygon2D {
     public:
-        Ellipse2D (const Vec<3> &_position, float_max_t _radius, float_max_t _ratio_x, float_max_t _ratio_y, Background *_background) :
-            Polygon2D(_position, _radius, 20, _ratio_x, _ratio_y, Quaternion::identity, _background) {}
+        Ellipse2D (const Spatial::Vec<3> &_position, float_max_t _radius, float_max_t _ratio_x, float_max_t _ratio_y, Background *_background) :
+            Polygon2D(_position, _radius, 20, _ratio_x, _ratio_y, Spatial::Quaternion::identity, _background) {}
 
         inline const std::string getType (void) const override { return "ellipse2d"; }
     };
 
     class Cone : public Mesh {
 
-        Vec<3> end;
+        Spatial::Vec<3> end;
         float_max_t base_radius, top_radius, height;
 
     public:
-        Cone (const Vec<3> &_start, const Vec<3> &_end, float_max_t _base_radius, float_max_t _top_radius, Background *_background = nullptr) :
-            Mesh(_start, Quaternion::identity, _background), end(_end), base_radius(_base_radius), top_radius(_top_radius), height(_start.distance(_end)) {
-                this->setOrientation(Quaternion::difference(Vec<3>::axisZ, this->getEnd()));
+        Cone (const Spatial::Vec<3> &_start, const Spatial::Vec<3> &_end, float_max_t _base_radius, float_max_t _top_radius, Background *_background = nullptr) :
+            Mesh(_start, Spatial::Quaternion::identity, _background), end(_end), base_radius(_base_radius), top_radius(_top_radius), height(_start.distance(_end)) {
+                this->setOrientation(Spatial::Quaternion::difference(Spatial::Vec<3>::axisZ, this->getEnd()));
         }
 
-        Cone (const Vec<3> &_start, const Quaternion &_orientation, float_max_t _base_radius, float_max_t _top_radius, const float_max_t _height, Background *_background) :
-            Mesh(_start, _orientation, _background), end(_orientation.rotated(_start + Vec<3>({ 0.0, 0.0, _height }))), base_radius(_base_radius), top_radius(_top_radius), height(_height) {}
+        Cone (const Spatial::Vec<3> &_start, const Spatial::Quaternion &_orientation, float_max_t _base_radius, float_max_t _top_radius, const float_max_t _height, Background *_background) :
+            Mesh(_start, _orientation, _background), end(_orientation.rotated(_start + Spatial::Vec<3>({ 0.0, 0.0, _height }))), base_radius(_base_radius), top_radius(_top_radius), height(_height) {}
 
         inline float_max_t getBaseRadius (void) const { return this->base_radius; }
         inline float_max_t getTopRadius (void) const { return this->top_radius; }
@@ -706,8 +706,8 @@ namespace Engine {
 
         inline float_max_t getHeight (void) const { return this->height; }
 
-        inline const Vec<3> &getStart (void) const { return this->getPosition(); }
-        inline const Vec<3> &getEnd (void) const { return this->end; }
+        inline const Spatial::Vec<3> &getStart (void) const { return this->getPosition(); }
+        inline const Spatial::Vec<3> &getEnd (void) const { return this->end; }
 
         void _draw (const bool only_border) const {
             this->getBackground()->apply();
@@ -722,10 +722,10 @@ namespace Engine {
     class Cylinder : public Cone {
 
     public:
-        Cylinder (const Vec<3> &_start, const Vec<3> &_end, float_max_t _radius, Background *_background = nullptr) :
+        Cylinder (const Spatial::Vec<3> &_start, const Spatial::Vec<3> &_end, float_max_t _radius, Background *_background = nullptr) :
             Cone(_start, _end, _radius, _radius, _background) {}
 
-        Cylinder (const Vec<3> &_start, const Quaternion &_orientation, float_max_t _radius, float_max_t _height, Background *_background = nullptr) :
+        Cylinder (const Spatial::Vec<3> &_start, const Spatial::Quaternion &_orientation, float_max_t _radius, float_max_t _height, Background *_background = nullptr) :
             Cone(_start, _orientation, _radius, _radius, _height, _background) {}
 
         inline float_max_t getRadius (void) const { return this->getBaseRadius(); }
@@ -745,9 +745,9 @@ namespace Engine {
         float_max_t radius;
 
         static void recursiveTriangle(
-            const Vec<3> &a,
-            const Vec<3> &b,
-            const Vec<3> &c,
+            const Spatial::Vec<3> &a,
+            const Spatial::Vec<3> &b,
+            const Spatial::Vec<3> &c,
             const float_max_t radius,
             const unsigned steps
         ) {
@@ -763,7 +763,7 @@ namespace Engine {
                 Draw::vertex(c[0] * radius, c[1] * radius, c[2] * radius);
             } else {
                 const unsigned next_step = steps - 1;
-                const Vec<3>
+                const Spatial::Vec<3>
                     ab = ((a + b) * 0.5).normalized(),
                     ac = ((a + c) * 0.5).normalized(),
                     bc = ((b + c) * 0.5).normalized();
@@ -776,8 +776,8 @@ namespace Engine {
         }
 
     public:
-        Sphere3D (const Vec<3> &_position, const float_max_t _radius, Background *_background = nullptr) :
-            Mesh(_position, Quaternion::identity, _background), radius(_radius) {};
+        Sphere3D (const Spatial::Vec<3> &_position, const float_max_t _radius, Background *_background = nullptr) :
+            Mesh(_position, Spatial::Quaternion::identity, _background), radius(_radius) {};
 
         float_max_t getRadius (void) const { return this->radius; }
         void setRadius (float_max_t _radius) { this->radius = _radius; }
@@ -788,7 +788,7 @@ namespace Engine {
                 X = 0.525731112119133606,
                 Z = 0.850650808352039932;
 
-            static Vec<3> vdata[12] = {
+            static Spatial::Vec<3> vdata[12] = {
                 {  -X, 0.0,   Z }, {   X, 0.0,   Z }, {  -X, 0.0,  -Z },
                 {   X, 0.0,  -Z }, { 0.0,   Z,   X }, { 0.0,   Z,  -X },
                 { 0.0,  -Z,   X }, { 0.0,  -Z,  -X }, {   Z,   X, 0.0 },

@@ -57,7 +57,7 @@ namespace Engine {
 
                 constexpr unsigned collision_samples = 4;
                 const float_max_t multiplier = delta_time / static_cast<float_max_t>(collision_samples);
-                Vec<3> point;
+                Spatial::Vec<3> point;
                 static std::unordered_map<const Object *, std::unordered_set<const Object *>> collided;
 
                 for (unsigned i = 0; i < collision_samples; ++i) {
@@ -69,7 +69,7 @@ namespace Engine {
 
                         if (valid) {
 
-                            const Vec<3> delta_speed = child->getSpeed() * multiplier;
+                            const Spatial::Vec<3> delta_speed = child->getSpeed() * multiplier;
 
                             for (auto &other : this->children) {
 
@@ -199,7 +199,7 @@ namespace Engine {
     void Object::debugInfo (std::ostream &out, const std::string shift) const {
         if (Object::isValid(this)) {
 
-            Engine::Mesh *mesh = this->getMesh();
+            Mesh *mesh = this->getMesh();
             std::string next_shift = shift + ' ';
 
             out << shift << "Type: " << this->getType() << std::endl;

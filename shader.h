@@ -11,7 +11,7 @@
 #include <sstream>
 #include <functional>
 #include <GL/glew.h>
-#include "defaults.h"
+#include "spatial/defaults.h"
 
 namespace Engine {
     namespace Shader {

@@ -2,7 +2,7 @@
 #define SRC_ENGINE_EASING_H_
 
 #include <cmath>
-#include "defaults.h"
+#include "spatial/defaults.h"
 
 //
 // TERMS OF USE - EASING EQUATIONS
@@ -172,18 +172,18 @@ namespace Engine {
     	namespace Sine {
 
     		inline float_max_t In (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
-    			return b + c - (c * std::cos((t / d) * (PI / 2.0)));
+    			return b + c - (c * std::cos((t / d) * (Spatial::PI / 2.0)));
     		}
 
     		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
-    			return b + (c * std::sin((t / d) * (PI / 2.0)));
+    			return b + (c * std::sin((t / d) * (Spatial::PI / 2.0)));
     		}
 
     		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
 
     			c *= 0.5;
 
-    			return b - (c * (std::cos(PI * (t / d)) - 1.0));
+    			return b - (c * (std::cos(Spatial::PI * (t / d)) - 1.0));
     		}
     	};
 
@@ -282,7 +282,7 @@ namespace Engine {
 
     			t -= 1.0;
 
-    			return b - (c * std::pow(2.0, 10.0 * t) * std::sin((((t * d) - s) * (2.0 * PI)) / p));
+    			return b - (c * std::pow(2.0, 10.0 * t) * std::sin((((t * d) - s) * (2.0 * Spatial::PI)) / p));
     		}
 
     		inline float_max_t Out (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
@@ -302,7 +302,7 @@ namespace Engine {
     			p = 0.30 * d;
     			s = 0.25 * p;
 
-    			return b + c + (c * std::pow(2.0, -10.0 * t) * std::sin(((t * d) - s) * ((2.0 * PI) / p)));
+    			return b + c + (c * std::pow(2.0, -10.0 * t) * std::sin(((t * d) - s) * ((2.0 * Spatial::PI) / p)));
     		}
 
     		inline float_max_t InOut (float_max_t t, float_max_t b, float_max_t c, float_max_t d) {
@@ -325,10 +325,10 @@ namespace Engine {
     			t -= 1.0;
 
     			if (t < 0.0) {
-    				return b - (0.5 * a * std::pow(2.0,  10.0 * t) * std::sin((t * d - s) * (2.0 * PI) / p));
+    				return b - (0.5 * a * std::pow(2.0,  10.0 * t) * std::sin((t * d - s) * (2.0 * Spatial::PI) / p));
     			}
 
-    			return b + c + (0.5 * a * std::pow(2.0, -10.0 * t) * std::sin((t * d - s) * (2.0 * PI) / p));
+    			return b + c + (0.5 * a * std::pow(2.0, -10.0 * t) * std::sin((t * d - s) * (2.0 * Spatial::PI) / p));
     		}
     	};
 

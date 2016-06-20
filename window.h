@@ -7,12 +7,12 @@
 #include <unistd.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include "defaults.h"
+#include "spatial/defaults.h"
 #include "shader.h"
 #include "event.h"
 #include "object.h"
 #include "easing.h"
-#include "vec.h"
+#include "spatial/vec.h"
 #include "texturepng.h"
 
 namespace Engine {
@@ -28,7 +28,7 @@ namespace Engine {
         float_max_t start_time = 0, speed = 1.0;
         std::set<unsigned> paused;
         bool closed = false;
-        std::queue<std::tuple<GLuint, float_max_t, float_max_t, Vec<3>>> textures;
+        std::queue<std::tuple<GLuint, float_max_t, float_max_t, Spatial::Vec<3>>> textures;
 
         bool executeTimeout(std::map<unsigned, std::tuple<std::function<bool()>, float_max_t, float_max_t, bool, bool>>::iterator timeout);
 
@@ -56,12 +56,12 @@ namespace Engine {
         }
 
         // TODO change to background
-        void addTexture2D (const GLuint texture, const float_max_t width, const float_max_t height, const Vec<3> &position) {
+        void addTexture2D (const GLuint texture, const float_max_t width, const float_max_t height, const Spatial::Vec<3> &position) {
             this->textures.push(std::forward_as_tuple(texture, width, height, position));
         }
 
         // TODO remove
-        void drawNumber (const unsigned number, const float_max_t height, Vec<3> position) {
+        void drawNumber (const unsigned number, const float_max_t height, Spatial::Vec<3> position) {
 
             const static GLuint textures_numbers[] = {
                 loadPNG("images/numbers/0.png"),
@@ -166,7 +166,7 @@ namespace Engine {
 
                     GLuint texture;
                     float_max_t width, height;
-                    Vec<3> position;
+                    Spatial::Vec<3> position;
 
                     std::tie(texture, width, height, position) = this->textures.front();
 

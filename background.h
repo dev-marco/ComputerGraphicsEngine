@@ -4,7 +4,7 @@
 #include <memory>
 #include <iostream>
 #include <GLFW/glfw3.h>
-#include "defaults.h"
+#include "spatial/defaults.h"
 #include "color.h"
 
 namespace Engine {

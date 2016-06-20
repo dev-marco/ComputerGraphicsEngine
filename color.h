@@ -3,7 +3,7 @@
 
 #include <string>
 #include <GLFW/glfw3.h>
-#include "defaults.h"
+#include "spatial/defaults.h"
 
 namespace Engine {
 

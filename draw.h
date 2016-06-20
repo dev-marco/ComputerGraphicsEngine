@@ -5,9 +5,9 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <xmmintrin.h>
-#include "defaults.h"
-#include "vec.h"
-#include "quaternion.h"
+#include "spatial/defaults.h"
+#include "spatial/vec.h"
+#include "spatial/quaternion.h"
 #include "background.h"
 #include "shader.h"
 
@@ -70,7 +70,7 @@ namespace Engine {
         // };
     }
 
-    static inline void transformVertex (Vec<3> &vertex) {
+    static inline void transformVertex (Spatial::Vec<3> &vertex) {
         // vertex[0] = (vertex[0] * matrix[0]) + (vertex[1] * matrix[4]) + (vertex[1] * matrix[ 8]) + matrix[12];
         // vertex[1] = (vertex[0] * matrix[1]) + (vertex[1] * matrix[5]) + (vertex[1] * matrix[ 9]) + matrix[13];
         // vertex[2] = (vertex[0] * matrix[2]) + (vertex[1] * matrix[6]) + (vertex[1] * matrix[10]) + matrix[14];
@@ -79,7 +79,7 @@ namespace Engine {
     public:
 
         // TODO create camera
-        inline static void lookAt (const Engine::Vec<3> &eye_pos, const Engine::Vec<3> &look_dir, const Engine::Vec<3> &up_vec) {
+        inline static void lookAt (const Spatial::Vec<3> &eye_pos, const Spatial::Vec<3> &look_dir, const Spatial::Vec<3> &up_vec) {
 
             glMatrixMode(GL_MODELVIEW);
             glLoadIdentity();
@@ -117,7 +117,7 @@ namespace Engine {
 
 // -----------------------------------------------------------------------------
 
-        inline static void vertex (Vec<3> vert) {
+        inline static void vertex (Spatial::Vec<3> vert) {
             if (background) {
                 background->apply();
             }
@@ -132,7 +132,7 @@ namespace Engine {
 
 // -------------------------------------
 
-        inline static void normal (Vec<3> vec) {
+        inline static void normal (Spatial::Vec<3> vec) {
             glNormal3dv(vec.data());
         }
 
@@ -154,13 +154,13 @@ namespace Engine {
             }
         }
 
-        inline static void translate (const Vec<3> &vec) {
+        inline static void translate (const Spatial::Vec<3> &vec) {
             translate(vec[0], vec[1], vec[2]);
         }
 
 // -------------------------------------
 
-        inline static void rotate (const Quaternion &quat) {
+        inline static void rotate (const Spatial::Quaternion &quat) {
             if (!quat.isIdentity()) {
                 multiplyMatrix(quat.rotation());
                 glMultMatrixd(quat.rotation().data());

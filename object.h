@@ -8,10 +8,10 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
-#include "defaults.h"
+#include "spatial/defaults.h"
 #include "shader.h"
-#include "vec.h"
-#include "quaternion.h"
+#include "spatial/vec.h"
+#include "spatial/quaternion.h"
 #include "mesh.h"
 
 namespace Engine {
@@ -32,8 +32,8 @@ namespace Engine {
             min_acceleration = 0.0,
             max_acceleration = std::numeric_limits<float_max_t>::infinity(),
             max_force = std::numeric_limits<float_max_t>::infinity();
-        Vec<3> position, speed, acceleration;
-        Quaternion orientation;
+        Spatial::Vec<3> position, speed, acceleration;
+        Spatial::Quaternion orientation;
 
         static void delayedDestroy(void);
 
@@ -44,13 +44,13 @@ namespace Engine {
         }
 
         inline Object (
-            const Vec<3> &_position = Vec<3>::origin,
-            const Quaternion &_orientation = Quaternion::identity,
+            const Spatial::Vec<3> &_position = Spatial::Vec<3>::origin,
+            const Spatial::Quaternion &_orientation = Spatial::Quaternion::identity,
             bool _display = true,
             Mesh *_mesh = nullptr,
             Mesh *_collider = nullptr,
-            const Vec<3> &_speed = Vec<3>::zero,
-            const Vec<3> &_acceleration = Vec<3>::zero,
+            const Spatial::Vec<3> &_speed = Spatial::Vec<3>::zero,
+            const Spatial::Vec<3> &_acceleration = Spatial::Vec<3>::zero,
             float_max_t _mass = 1.0,
             float_max_t _min_speed = 0.0,
             float_max_t _max_speed = std::numeric_limits<float_max_t>::infinity(),
@@ -67,7 +67,7 @@ namespace Engine {
 
         inline virtual ~Object (void) { Object::invalid.insert(this); }
 
-        inline bool detectCollision (const Object *other, const Vec<3> &my_speed, const Vec<3> &other_speed, Vec<3> &point) const {
+        inline bool detectCollision (const Object *other, const Spatial::Vec<3> &my_speed, const Spatial::Vec<3> &other_speed, Spatial::Vec<3> &point) const {
             return this->getCollider()->detectCollision(other->getCollider(), this->getPosition(), my_speed, other->getPosition(), other_speed, point);
         }
 
@@ -144,19 +144,19 @@ namespace Engine {
         inline float_max_t getMaxForce (void) const { return this->max_force; }
         inline void setMaxForce (float_max_t _max_force) { this->max_force = _max_force; }
 
-        inline const Vec<3> &getPosition (void) const { return this->position; }
-        inline const Quaternion &getOrientation (void) const { return this->orientation; }
-        inline const Vec<3> &getSpeed (void) const { return this->speed; }
-        inline const Vec<3> &getAcceleration (void) const { return this->acceleration; }
+        inline const Spatial::Vec<3> &getPosition (void) const { return this->position; }
+        inline const Spatial::Quaternion &getOrientation (void) const { return this->orientation; }
+        inline const Spatial::Vec<3> &getSpeed (void) const { return this->speed; }
+        inline const Spatial::Vec<3> &getAcceleration (void) const { return this->acceleration; }
         inline float_max_t getMass (void) const { return this->mass; }
 
-        inline void setPosition (const Vec<3> &_position) { this->position = _position; }
-        inline void setOrientation (const Quaternion &_orientation) { this->orientation = _orientation; }
-        inline void setSpeed (const Vec<3> &_speed) { this->speed = _speed.clamped(this->getMinSpeed(), this->getMaxSpeed()); }
-        inline void setAcceleration (const Vec<3> &_acceleration) { this->acceleration = _acceleration.clamped(this->getMinAcceleration(), this->getMaxAcceleration()); }
+        inline void setPosition (const Spatial::Vec<3> &_position) { this->position = _position; }
+        inline void setOrientation (const Spatial::Quaternion &_orientation) { this->orientation = _orientation; }
+        inline void setSpeed (const Spatial::Vec<3> &_speed) { this->speed = _speed.clamped(this->getMinSpeed(), this->getMaxSpeed()); }
+        inline void setAcceleration (const Spatial::Vec<3> &_acceleration) { this->acceleration = _acceleration.clamped(this->getMinAcceleration(), this->getMaxAcceleration()); }
         inline void setMass (float_max_t _mass) { this->mass = _mass; }
 
-        inline void applyForce (const Vec<3> &_force) { this->setAcceleration(this->getAcceleration() + (_force / this->getMass()).clamped(0.0, this->getMaxForce())); }
+        inline void applyForce (const Spatial::Vec<3> &_force) { this->setAcceleration(this->getAcceleration() + (_force / this->getMass()).clamped(0.0, this->getMaxForce())); }
 
         inline Mesh *getMesh (void) const { return this->mesh; }
         inline Mesh *getCollider (void) const { return this->collider; }
@@ -166,7 +166,7 @@ namespace Engine {
 
         inline operator bool () const { return Object::isValid(this); }
 
-        virtual inline void onCollision (const Object *other, const Vec<3> &point) {}
+        virtual inline void onCollision (const Object *other, const Spatial::Vec<3> &point) {}
         virtual inline void beforeDestroy () {}
         virtual inline void afterDestroy () {}
         virtual inline void beforeUpdate (float_max_t now, float_max_t delta_time, unsigned tick) {}
