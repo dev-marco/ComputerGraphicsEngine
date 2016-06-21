@@ -1,0 +1,3 @@
+[submodule "spatial"]
+	path = spatial
+	url = git@github.com:dev-marco/computer-graphics-spatial.git
