@@ -23,13 +23,13 @@ namespace Engine {
 
         if (ray_1_size2 <= Spatial::EPSILON) {
             if (ray_2_size2 > Spatial::EPSILON) {
-                mub = clamp(ray_2_delta.dot(rays_delta) / ray_2_size2, 0.0, 1.0);
+                mub = Spatial::clamp(ray_2_delta.dot(rays_delta) / ray_2_size2, 0.0, 1.0);
             }
         } else {
             const float_max_t c = ray_1_delta.dot(rays_delta);
 
             if (ray_2_size2 <= Spatial::EPSILON) {
-                mua = clamp(-c / ray_1_size2, 0.0, 1.0);
+                mua = Spatial::clamp(-c / ray_1_size2, 0.0, 1.0);
             } else {
                 const float_max_t
                     b = ray_1_delta.dot(ray_2_delta),
@@ -37,16 +37,16 @@ namespace Engine {
                     f = ray_2_delta.dot(rays_delta);
 
                 if (denom != 0.0) {
-                    mua = clamp((b * f - c * ray_2_size2) / denom, 0.0, 1.0);
+                    mua = Spatial::clamp((b * f - c * ray_2_size2) / denom, 0.0, 1.0);
                 }
 
                 const float_max_t numer = b * mua + f;
 
                 if (numer <= 0.0) {
-                    mua = clamp(-c / ray_1_size2, 0.0, 1.0);
+                    mua = Spatial::clamp(-c / ray_1_size2, 0.0, 1.0);
                 } else if (numer >= ray_2_size2) {
                     mub = 1.0;
-                    mua = clamp((b - c) / ray_1_size2, 0.0, 1.0);
+                    mua = Spatial::clamp((b - c) / ray_1_size2, 0.0, 1.0);
                 } else {
                     mub = numer / ray_2_size2;
                 }

@@ -19,17 +19,6 @@ namespace Engine {
     class Mesh {
 
     public:
-
-        template <typename T>
-        inline static constexpr T clamp (const T value, const T min_value, const T max_value) {
-            if (value > max_value) {
-                return max_value;
-            } else if (value < min_value) {
-                return min_value;
-            }
-            return value;
-        }
-
         inline static std::array<std::array<Spatial::Vec<3>, 2>, 3> edgesTriangle (
             const Spatial::Vec<3> &tri_point_1,
             const Spatial::Vec<3> &tri_point_2,
@@ -99,7 +88,7 @@ namespace Engine {
             if (length_2 == 0.0) {
                 near_point = ray_start;
             } else {
-                const float_max_t param = clamp(((point - ray_start) * delta_ray).sum() / length_2, 0.0, 1.0);
+                const float_max_t param = Spatial::clamp(((point - ray_start) * delta_ray).sum() / length_2, 0.0, 1.0);
                 near_point = ray_start + (param * delta_ray);
             }
 
@@ -273,7 +262,7 @@ namespace Engine {
                     if (t1 > tmin) {
                         tmin = t1;
                     }
-                    if (t2 > tmax) {
+                    if (t2 < tmax) {
                         tmax = t2;
                     }
                     if (tmin > tmax) {
